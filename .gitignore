@@ -1,0 +1,20 @@
+# debug
+*.DS_Store
+*.vscode/
+*.dSTM/
+
+# output
+*.out
+webserv
+
+# object
+*.o
+*.a
+
+# test
+tmp/
+build/
+
+# docs
+html/
+latex/
