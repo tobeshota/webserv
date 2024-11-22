@@ -1,0 +1,19 @@
+services:
+  webserv:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./srcs:/app/srcs
+      - ./docs:/app/docs
+      - ./test:/app/test
+      - ./Makefile:/app/Makefile
+      - ./conf:/app/conf
+      - ./html:/app/html
+    ports:
+      - "8080:80"
+      - "8001:8001"
+      - "8002:8002"
+      - "8003:8003"
+    stdin_open: true
+    tty: true

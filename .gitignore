@@ -14,7 +14,3 @@ webserv
 # test
 tmp/
 build/
-
-# docs
-html/
-latex/
