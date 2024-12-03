@@ -17,6 +17,13 @@ body:
     validations:
       required: true
   - type: textarea
+    id: cosense
+    attributes:
+      label: Cosense
+      description: Please post the Cosense URL.
+    validations:
+      required: true
+  - type: textarea
     id: additional
     attributes:
       label: Additional context.
