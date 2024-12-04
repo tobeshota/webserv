@@ -1,0 +1,14 @@
+name: Unit Test
+
+on: push
+
+jobs:
+  Ubuntu:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Install cmake
+        run: sudo apt-get update && sudo apt-get install cmake
+      - name: Run google test
+        run: make test
