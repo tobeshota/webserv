@@ -21,6 +21,7 @@ RUN apt-get update && apt-get install -y \
     make \
     bash \
     curl \
+    lcov \
     && apt-get clean
 
 RUN pip3 install pytest

@@ -1,12 +1,5 @@
 # CMakeのバージョンを設定
 cmake_minimum_required(VERSION 3.14)
-# プロジェクト名と使用する言語を設定
-project(my_project)
-
-# 条件付きでTESTマクロを定義
-if(DEFINED TEST_BY_GTEST)
-  add_compile_definitions(TEST_BY_GTEST)  # #define TEST_BY_GTEST と同義
-endif()
 
 # GoogleTest requires at least C++14
 set(CMAKE_CXX_STANDARD 14)
@@ -20,7 +13,13 @@ FetchContent_Declare(
 
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+
+# Enable Google test
 FetchContent_MakeAvailable(googletest)
+
+# For gcov to obtain test coverage: add an option to output a file
+add_compile_options(--coverage)
+add_link_options(--coverage)
 
 enable_testing()
 include(GoogleTest)
