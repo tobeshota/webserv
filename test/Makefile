@@ -8,9 +8,15 @@ SRCS		=	$(wildcard $(SRCS_DIR)*.cpp)
 HEADERS		=	$(wildcard $(INCS_DIR)*.hpp)
 
 test:
-	@ cmake -S . -B build -DTEST_BY_GTEST=1	# ビルド時にTEST_BY_GTESTが定義される.実行プロセスがGoogleTestによるものであることを確認するために定義することにした
+	@ cmake -S . -B build
 	@ cmake --build build
 	@ cd build && ctest --output-on-failure
+
+coverage: test
+	@ cd build && lcov --capture --directory ./CMakeFiles --output-file coverage.info --rc "lcov_branch_coverage=1"
+	@ cd build && lcov --remove coverage.info '/usr/*' '*/googletest/*' '*/test/*' --output-file coverage.filtered.info  --rc "lcov_branch_coverage=1"
+	@ cd build && genhtml coverage.filtered.info --output-directory coverage_report --branch-coverage
+	@ echo "\nCoverage Report:\n./test/build/coverage_report/index.html\n"
 
 fclean:
 	$(RM) $(BUILD_DIR)
