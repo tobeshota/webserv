@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+
 #include <webserv.hpp>
 
 /** Demonstrate some basic assertions.
