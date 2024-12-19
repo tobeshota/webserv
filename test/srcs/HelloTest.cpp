@@ -25,3 +25,9 @@ TEST(ABSTest, Negative) {
   EXPECT_EQ(ft::abs(-4), 4);
   EXPECT_EQ(ft::abs(-42), 42);
 }
+
+TEST(WebservTest, NoClash) {
+  int argc = 1;
+  char *argv[] = { (char*)"./webserv" };
+  EXPECT_EQ(webserv(argc, argv), EXIT_SUCCESS);
+}
