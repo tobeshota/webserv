@@ -28,6 +28,6 @@ TEST(ABSTest, Negative) {
 
 TEST(WebservTest, NoClash) {
   int argc = 1;
-  char *argv[] = { (char*)"./webserv" };
+  char *argv[] = {(char *)"./webserv"};
   EXPECT_EQ(webserv(argc, argv), EXIT_SUCCESS);
 }
