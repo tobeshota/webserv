@@ -1,3 +1,3 @@
 #include "webserv.hpp"
 
-int main(void) { std::cout << "webserv!" << std::endl; }
+int main(int argc, char **argv) { return webserv(argc, argv); }

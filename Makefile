@@ -6,7 +6,7 @@
 #    By: tobeshota <tobeshota@student.42.fr>        +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/09/12 09:34:52 by tobeshota         #+#    #+#              #
-#    Updated: 2024/11/13 16:27:32 by tobeshota        ###   ########.fr        #
+#    Updated: 2024/12/17 12:21:31 by tobeshota        ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -63,6 +63,9 @@ address: re
 
 test:
 	@ make test -C test/
+
+coverage:
+	@ make coverage -C test/
 
 doc:
 	make doc -C docs/ -f doc.mk
