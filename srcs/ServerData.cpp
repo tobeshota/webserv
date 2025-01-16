@@ -11,7 +11,8 @@ void ServerData::set_address_data() {
     // アドレスデータの設定
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
-    address.sin_port = htons(8080);
+    //ここにwebserv.confで指定されたポート番号を入れる。PORTは仮
+    address.sin_port = htons(PORT);
 }
 
 void ServerData::set_server_fd() {
