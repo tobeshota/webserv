@@ -7,6 +7,7 @@
 #include <poll.h>
 #include <unistd.h>
 #include "ServerData.hpp"
+#include "Poll.hpp"
 
 
 #define PORT 8080
@@ -18,12 +19,14 @@ class OSInit {
  private:
   /* data */
   ServerData server_data;
+  Poll poll_data;
   std::vector<pollfd> poll_fds;
  public:
   OSInit(/* args */);
   ~OSInit();
   // サーバーを構築する
   void initServer();
-  void poll_data();
-  std::vector<pollfd> get_poll_fds() const;
+  bool  check_func(int func);
+
+  virtual void set_serverpoll_data();
 };

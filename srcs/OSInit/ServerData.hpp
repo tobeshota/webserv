@@ -1,6 +1,8 @@
 #ifndef SERVER_DATA_HPP
 #define SERVER_DATA_HPP
 
+#pragma once
+
 #include "IServerFunctions.hpp"
 #include <iostream>
 #include <string>
