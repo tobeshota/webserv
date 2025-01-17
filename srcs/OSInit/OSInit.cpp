@@ -14,12 +14,12 @@ void OSInit::set_serverpoll_data() {
     poll_fds.push_back(server_fd_poll);
 }
 
-bool OSInit::check_func(int func) {
+int OSInit::check_func(int func) {
     if (func == -1) {
         perror("poll");
         exit(EXIT_FAILURE);
     }
-    return true;
+    return func;
 }
 
 // サーバーを構築する
@@ -37,7 +37,7 @@ void OSInit::initServer() {
 
     while (true) 
     {
-        int poll_count = poll(poll_data.get_poll_fds().data(), poll_data.get_poll_fds().size(), -1);
+        int poll_count = check_func(poll(poll_data.get_poll_fds().data(), poll_data.get_poll_fds().size(), -1));
         if (poll_count == -1)
         {
             perror("poll");

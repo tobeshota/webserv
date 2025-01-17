@@ -26,7 +26,7 @@ class OSInit {
   ~OSInit();
   // サーバーを構築する
   void initServer();
-  bool  check_func(int func);
+  int  check_func(int func);
 
   virtual void set_serverpoll_data();
 };
