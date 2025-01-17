@@ -2,7 +2,6 @@
 #define SERVER_DATA_HPP
 
 #include "IServerFunctions.hpp"
-#include "IPollData.hpp"
 #include <iostream>
 #include <string>
 #include <vector>
@@ -11,13 +10,12 @@
 #include <unistd.h>
 #include <poll.h>
 
-class ServerData : public IPollData, public IServerFunctions {
+class ServerData :public IServerFunctions {
  private:
   int server_fd;
   int new_socket;
   struct sockaddr_in address;
   int addrlen;
-  std::vector<pollfd> poll_fds;
  public:
   ServerData();
   ~ServerData();
@@ -26,13 +24,11 @@ class ServerData : public IPollData, public IServerFunctions {
 	void server_bind();
 	void server_listen();
 	void server_accept();
-	void poll_data();
 	int get_server_fd() const;
 	int get_new_socket() const;
 	struct sockaddr_in get_address() const;
 	int get_addrlen() const;
 	void set_new_socket(int new_socket);
-	std::vector<pollfd> get_poll_fds() const;
 
 };
 

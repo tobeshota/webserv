@@ -18,9 +18,12 @@ class OSInit {
  private:
   /* data */
   ServerData server_data;
+  std::vector<pollfd> poll_fds;
  public:
   OSInit(/* args */);
   ~OSInit();
   // サーバーを構築する
   void initServer();
+  void poll_data();
+  std::vector<pollfd> get_poll_fds() const;
 };

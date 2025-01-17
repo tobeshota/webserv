@@ -6,6 +6,18 @@ OSInit::OSInit() {
 OSInit::~OSInit() {
 }
 
+std::vector<pollfd> OSInit::get_poll_fds() const {
+    return poll_fds;
+}
+
+void OSInit::poll_data() {
+    // poll_fdsの初期設定
+    pollfd server_fd_poll;
+    server_fd_poll.fd = server_data.get_server_fd();
+    server_fd_poll.events = POLLIN;
+    poll_fds.push_back(server_fd_poll);
+}
+
 // サーバーを構築する
 void OSInit::initServer() {
 
@@ -21,17 +33,17 @@ void OSInit::initServer() {
 
     while (true) 
     {
-        int poll_count = poll(server_data.get_poll_fds().data(), server_data.get_poll_fds().size(), -1);
+        int poll_count = poll(get_poll_fds().data(), get_poll_fds().size(), -1);
         if (poll_count == -1)
         {
             perror("poll");
             exit(EXIT_FAILURE);
         }
 
-        for (size_t i = 0; i < server_data.get_poll_fds().size(); ++i)
+        for (size_t i = 0; i < get_poll_fds().size(); ++i)
         {
-            if (server_data.get_poll_fds()[i].revents & POLLIN) {
-                if (server_data.get_poll_fds()[i].fd == server_data.get_server_fd())
+            if (get_poll_fds()[i].revents & POLLIN) {
+                if (get_poll_fds()[i].fd == server_data.get_server_fd())
                 {
                     // 新しい接続を受け入れる
                     int new_socket = accept(server_data.get_server_fd(), nullptr, nullptr);
@@ -46,36 +58,36 @@ void OSInit::initServer() {
                     pollfd client_fd_poll;
                     client_fd_poll.fd = new_socket;
                     client_fd_poll.events = POLLIN;
-                    server_data.get_poll_fds().push_back(client_fd_poll);
+                    get_poll_fds().push_back(client_fd_poll);
                 } 
                 else 
                 {
                     // クライアントからのデータを受信
                     char buffer[1024];
-                    ssize_t bytes_read = read(server_data.get_poll_fds()[i].fd, buffer, sizeof(buffer));
+                    ssize_t bytes_read = read(get_poll_fds()[i].fd, buffer, sizeof(buffer));
                     if (bytes_read == -1)
                     {
                         perror("read");
-                        close(server_data.get_poll_fds()[i].fd);
-                        server_data.get_poll_fds().erase(server_data.get_poll_fds().begin() + i);
+                        close(get_poll_fds()[i].fd);
+                        get_poll_fds().erase(get_poll_fds().begin() + i);
                         --i;
                     } else if (bytes_read == 0)
                     {
                         // クライアントが切断
                         std::cout << "Client disconnected" << std::endl;
-                        close(server_data.get_poll_fds()[i].fd);
-                        server_data.get_poll_fds().erase(server_data.get_poll_fds().begin() + i);
+                        close(get_poll_fds()[i].fd);
+                        get_poll_fds().erase(get_poll_fds().begin() + i);
                         --i;
                     } else {
                         // 受信データを処理
                         buffer[bytes_read] = '\0';
                         std::cout << "Received: " << buffer << std::endl;
                         // 受信データをクライアントに送信（エコー）
-                    ssize_t bytes_sent = write(server_data.get_poll_fds()[i].fd, buffer, bytes_read);
+                    ssize_t bytes_sent = write(get_poll_fds()[i].fd, buffer, bytes_read);
                     if (bytes_sent == -1) {
                         perror("write");
-                        close(server_data.get_poll_fds()[i].fd);
-                        server_data.get_poll_fds().erase(server_data.get_poll_fds().begin() + i);
+                        close(get_poll_fds()[i].fd);
+                        get_poll_fds().erase(get_poll_fds().begin() + i);
                         --i;
                     }
                     }
