@@ -21,12 +21,17 @@ class OSInit {
   ServerData server_data;
   Poll poll_data;
   std::vector<pollfd> poll_fds;
+
+  void process_poll_events();
+  void handle_new_connection(int server_fd);
+  void handle_client_data(size_t i);
  public:
   OSInit(/* args */);
   ~OSInit();
   // サーバーを構築する
   void initServer();
-  int  check_func(int func);
+  int  check_func(int func, std::string error_message);
+  void run();
 
   virtual void set_serverpoll_data();
 };
