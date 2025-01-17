@@ -22,17 +22,19 @@ int OSInit::check_func(int func, std::string error_message) {
     return func;
 }
 
-void OSInit::run() 
-{
-    while(true)
-    {
+// メインループを実行する関数
+void OSInit::run() {
+    while (true) {
+        // pollシステムコールを呼び出し、イベントを待つ
         int poll_count = check_func(poll(poll_fds.data(), poll_fds.size(), -1), "poll");
-        //unnuse
+        // デバッグ用にpoll_countを出力
         std::cout << poll_count << std::endl;
+        // pollイベントを処理
         process_poll_events();
     }
 }
 
+// 新しい接続を処理する関数
 void OSInit::handle_new_connection(int server_fd)
 {
     int new_socket = accept(server_fd, nullptr, nullptr);
@@ -48,7 +50,7 @@ void OSInit::handle_new_connection(int server_fd)
     poll_data.get_poll_fds().push_back(client_fd_poll);
 }
 
-
+// クライアントからのデータを処理する関数
  void OSInit::handle_client_data(size_t i) {
         char buffer[1024];
         ssize_t bytes_read = read(poll_data.get_poll_fds()[i].fd, buffer, sizeof(buffer));
@@ -75,7 +77,7 @@ void OSInit::handle_new_connection(int server_fd)
         }
     }
 
-
+// pollイベントを処理
 void OSInit::process_poll_events()
 {
     for (size_t i = 0; i < poll_data.get_poll_fds().size(); ++i) {
@@ -100,6 +102,7 @@ void OSInit::initServer() {
     std::cout << "Startup complete!, Start-up completed!" << std::endl;
     std::cout << " The number of people who can connect to this server remaining is " << MAX_CONNECTION  << std::endl;
     server_data.server_accept();
+    // メインループを実行
     run();
     close(server_data.get_server_fd());
   // webserv.conf指定のポート番号でのリッスンを受け付ける
