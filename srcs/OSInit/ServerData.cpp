@@ -45,6 +45,14 @@ void ServerData::server_accept() {
     }
 }
 
+void ServerData::poll_data() {
+    // poll_fdsの初期設定
+    pollfd server_fd_poll;
+    server_fd_poll.fd = server_fd;
+    server_fd_poll.events = POLLIN;
+    poll_fds.push_back(server_fd_poll);
+}
+
 int ServerData::get_server_fd() const {
     return server_fd;
 }
@@ -63,4 +71,8 @@ int ServerData::get_addrlen() const {
 
 void ServerData::set_new_socket(int new_socket) {
     this->new_socket = new_socket;
+}
+
+std::vector<pollfd> ServerData::get_poll_fds() const {
+    return poll_fds;
 }
