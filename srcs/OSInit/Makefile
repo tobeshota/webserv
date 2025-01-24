@@ -6,7 +6,7 @@
 #    By: yoshimurahiro <yoshimurahiro@student.42    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/09/12 09:34:52 by tobeshota         #+#    #+#              #
-#    Updated: 2025/01/17 07:52:30 by yoshimurahi      ###   ########.fr        #
+#    Updated: 2025/01/24 15:49:35 by yoshimurahi      ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -15,7 +15,7 @@ CC				=	c++
 FLAGS			=	-Wall -Wextra -Werror -std=c++98 -pedantic-errors
 RM				=	rm -rf
 
-OBJS_DIR		=	objs/
+OBJS_DIR		=	objs/ 
 
 SRCS			=	$(wildcard *.cpp)
 HEADERS			=	$(wildcard *.hpp)
@@ -50,7 +50,6 @@ fclean: clean
 re:		fclean all
 
 fmt:
-	make fmt -C test/
 	$(if $(SRCS), clang-format --style=Google -i $(SRCS))
 	$(if $(HEADERS), clang-format --style=Google -i $(HEADERS))
 	$(if $(SHS), shfmt -w $(SHS))

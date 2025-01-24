@@ -3,7 +3,7 @@
 
 // int main(int argc, char **argv) { return webserv(argc, argv); }
 
-//this is OSInit's main
+// this is OSInit's main
 int main() {
   OSInit os;
   os.initServer();
