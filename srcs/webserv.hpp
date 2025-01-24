@@ -3,7 +3,7 @@
 #include <iostream>
 
 #include "GenerateHTTPResponse.hpp"
-#include "OSInit.hpp"
+#include "OSInit/OSInit.hpp"
 #include "ParseConf.hpp"
 #include "ParseHTTPRequest.hpp"
 
