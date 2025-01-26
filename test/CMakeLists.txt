@@ -26,6 +26,7 @@ include(GoogleTest)
 
 # includeパスを指定
 include_directories("../srcs/")
+include_directories("../srcs/OSInit/")  # OSInit フォルダ内のファイルもインクルード
 
 # cppファイルをビルド対象に加える
 file(GLOB TEST_FILES "srcs/*.cpp")
