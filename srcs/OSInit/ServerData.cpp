@@ -51,7 +51,7 @@ int ServerData::get_server_fd() const { return server_fd; }
 int ServerData::get_new_socket() const { return new_socket; }
 
 struct sockaddr_in ServerData::get_address() const {
-  return address; 
+  return address;
 }
 
 int ServerData::get_addrlen() const { return addrlen; }
