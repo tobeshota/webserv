@@ -25,8 +25,8 @@ enable_testing()
 include(GoogleTest)
 
 # includeパスを指定
-include_directories("{CMAKE_SOURCE_DIR}/srcs")
-include_directories("{CMAKE_SOURCE_DIR}/srcs/OSInit")
+include_directories(${CMAKE_SOURCE_DIR}/srcs)
+include_directories(${CMAKE_SOURCE_DIR}/srcs/OSInit)
 
 # debug用
 message(STATUS "Current source dir: ${CMAKE_SOURCE_DIR}")
