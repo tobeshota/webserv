@@ -25,16 +25,12 @@ enable_testing()
 include(GoogleTest)
 
 # includeパスを指定
-include_directories(${CMAKE_SOURCE_DIR}/srcs)
-include_directories(${CMAKE_SOURCE_DIR}/srcs/OSInit)
-
-# debug用
-message(STATUS "Current source dir: ${CMAKE_SOURCE_DIR}")
-message(STATUS "Path to srcs: ${CMAKE_SOURCE_DIR}/srcs")
+include_directories(${CMAKE_SOURCE_DIR}/../srcs)
+include_directories(${CMAKE_SOURCE_DIR}/../srcs/OSInit)
 
 # cppファイルをビルド対象に加える
-file(GLOB TEST_FILES "srcs/*.cpp")
-file(GLOB SRCS_FILES "../srcs/*.cpp")
+file(GLOB TEST_FILES "${CMAKE_SOURCE_DIR}/srcs/*.cpp")
+file(GLOB SRCS_FILES "${CMAKE_SOURCE_DIR}/../srcs/*.cpp")
 # ただし「main.cpp(main関数が含まれるファイル)」はビルド対象から外す（main関数が含まれるファイルをGoogleTestのソースファイルに用いることができないため）
 list(FILTER TEST_FILES EXCLUDE REGEX "main.cpp")
 list(FILTER SRCS_FILES EXCLUDE REGEX "main.cpp")
