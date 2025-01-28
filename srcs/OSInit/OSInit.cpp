@@ -77,18 +77,25 @@ void OSInit::handle_client_data(size_t i) {
   }
 }
 
-// pollイベントを処理
+// pollイベントを処理する関数
 void OSInit::process_poll_events() {
+  // 監視対象のファイルディスクリプタ（pollfdリスト）をループでチェック
   for (size_t i = 0; i < poll_data.get_poll_fds().size(); ++i) {
+    // pollfd構造体のreventsにPOLLIN（読み込み可能イベント）がセットされている場合
     if (poll_data.get_poll_fds()[i].revents & POLLIN) {
+      // サーバーのファイルディスクリプタがイベントを発生させた場合
       if (poll_data.get_poll_fds()[i].fd == server_data.get_server_fd()) {
+        // 新しい接続を受け入れる処理を実行
         handle_new_connection(server_data.get_server_fd());
       } else {
+        // サーバー以外（クライアント）のファイルディスクリプタで読み込み可能イベントが発生
+        // 該当するクライアントのデータを処理
         handle_client_data(i);
       }
     }
   }
 }
+
 // サーバーを構築する
 void OSInit::initServer() {
   // サーバーの構築
