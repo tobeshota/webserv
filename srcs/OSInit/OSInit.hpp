@@ -8,7 +8,6 @@
 #include <string>
 #include <vector>
 
-#include "Poll.hpp"
 #include "ServerData.hpp"
 
 #define PORT 8080
@@ -20,7 +19,6 @@ class OSInit {
  private:
   /* data */
   ServerData server_data;
-  Poll poll_data;
   std::vector<pollfd> poll_fds;
 
   void process_poll_events();
@@ -34,6 +32,6 @@ class OSInit {
   void initServer();
   int check_func(int func, std::string error_message);
   void run();
-
+  std::vector<pollfd> get_poll_fds();
   virtual void set_serverpoll_data();
 };
