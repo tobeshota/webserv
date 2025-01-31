@@ -1,14 +1,18 @@
 #include "RunServer.hpp"
 #include "OSInit.hpp"
 
+RunServer::RunServer() {}
+
+RunServer::~RunServer() {}
+
 std::vector<pollfd> RunServer::get_poll_fds() { return poll_fds; }
 
 // メインループを実行する関数
 void RunServer::run(ServerData &server_data) {
   while (true) {
     // pollシステムコールを呼び出し、イベントを待つ
-    int poll_count = utilities::check_func(
-        poll(poll_fds.data(), poll_fds.size(), -1), "poll");
+    int poll_count = 
+        poll(poll_fds.data(), poll_fds.size(), -1);
     // デバッグ用にpoll_countを出力
     std::cout << poll_count << std::endl;
     // pollイベントを処理

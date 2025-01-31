@@ -25,10 +25,10 @@ int webserv(int argc, char **argv) {
   return EXIT_SUCCESS;
 }
 
-int check_func(int func, std::string error_message) {
-  if (func == -1) {
-    perror(error_message.c_str());
-    exit(EXIT_FAILURE);
-  }
-  return func;
-}
+// int check_func(int func, std::string error_message) {
+//   if (func == -1) {
+//     perror(error_message.c_str());
+//     exit(EXIT_FAILURE);
+//   }
+//   return func;
+// }

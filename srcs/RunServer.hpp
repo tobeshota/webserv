@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "webserv.hpp"
+#include "ServerData.hpp"
 
 class RunServer {
  private:

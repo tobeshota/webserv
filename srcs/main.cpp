@@ -1,4 +1,7 @@
 #include "webserv.hpp"
+#include "OSInit.hpp"
+#include "RunServer.hpp"
+#include "ServerData.hpp"
 
 // int main(int argc, char **argv) { return webserv(argc, argv); }
 
