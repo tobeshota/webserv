@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include "GenerateHTTPResponse.hpp"
-#include "OSInit/OSInit.hpp"
+#include "OSInit.hpp"
 #include "ParseConf.hpp"
 #include "ParseHTTPRequest.hpp"
 
@@ -23,4 +23,12 @@ int webserv(int argc, char **argv) {
   // }
   std::cout << "webserv!" << std::endl;
   return EXIT_SUCCESS;
+}
+
+int check_func(int func, std::string error_message) {
+  if (func == -1) {
+    perror(error_message.c_str());
+    exit(EXIT_FAILURE);
+  }
+  return func;
 }

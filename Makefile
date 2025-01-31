@@ -6,7 +6,7 @@
 #    By: yoshimurahiro <yoshimurahiro@student.42    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/09/12 09:34:52 by tobeshota         #+#    #+#              #
-#    Updated: 2025/01/26 11:13:36 by yoshimurahi      ###   ########.fr        #
+#    Updated: 2025/01/31 13:02:46 by yoshimurahi      ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -16,7 +16,6 @@ FLAGS			=	-Wall -Wextra -Werror -std=c++98 -pedantic-errors
 RM				=	rm -rf
 
 SRCS_DIR		=	srcs/
-SRCS_OSINIT		=	srcs/OSInit/
 INCS_DIR		=	srcs/
 OBJS_DIR		=	objs/
 

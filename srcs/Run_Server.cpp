@@ -1,42 +1,27 @@
+#include "Run_Server.hpp"
+
 #include "OSInit.hpp"
 
-OSInit::OSInit() {}
-
-OSInit::~OSInit() {}
-
-void OSInit::set_serverpoll_data() {
-  // poll_fdsの初期設定
-  pollfd server_fd_poll;
-  server_fd_poll.fd = server_data.get_server_fd();
-  server_fd_poll.events = POLLIN;
-  poll_fds.push_back(server_fd_poll);
-}
-
-std::vector<pollfd> OSInit::get_poll_fds() { return poll_fds; }
-
-int OSInit::check_func(int func, std::string error_message) {
-  if (func == -1) {
-    perror(error_message.c_str());
-    exit(EXIT_FAILURE);
-  }
-  return func;
-}
+std::vector<pollfd> RunServer::get_poll_fds() { return poll_fds; }
 
 // メインループを実行する関数
-void OSInit::run() {
+void RunServer::run(ServerData &server_data) {
   while (true) {
     // pollシステムコールを呼び出し、イベントを待つ
-    int poll_count =
-        check_func(poll(poll_fds.data(), poll_fds.size(), -1), "poll");
+    int poll_count = utilities::check_func(
+        poll(poll_fds.data(), poll_fds.size(), -1), "poll");
     // デバッグ用にpoll_countを出力
     std::cout << poll_count << std::endl;
     // pollイベントを処理
-    process_poll_events();
+    process_poll_events(server_data);
   }
 }
 
+// 新しいpollfdを追加する関数
+void RunServer::add_poll_fd(pollfd poll_fd) { poll_fds.push_back(poll_fd); }
+
 // 新しい接続を処理する関数
-void OSInit::handle_new_connection(int server_fd) {
+void RunServer::handle_new_connection(int server_fd) {
   int new_socket = accept(server_fd, nullptr, nullptr);
   if (new_socket == -1) {
     perror("accept");
@@ -51,10 +36,9 @@ void OSInit::handle_new_connection(int server_fd) {
 }
 
 // クライアントからのデータを処理する関数
-void OSInit::handle_client_data(size_t i) {
+void RunServer::handle_client_data(size_t i) {
   char buffer[1024];
-  ssize_t bytes_read =
-      read(get_poll_fds()[i].fd, buffer, sizeof(buffer));
+  ssize_t bytes_read = read(get_poll_fds()[i].fd, buffer, sizeof(buffer));
   if (bytes_read == -1) {
     perror("read");
     close(get_poll_fds()[i].fd);
@@ -68,8 +52,7 @@ void OSInit::handle_client_data(size_t i) {
   } else {
     buffer[bytes_read] = '\0';
     std::cout << "Received: " << buffer << std::endl;
-    ssize_t bytes_sent =
-        write(get_poll_fds()[i].fd, buffer, bytes_read);
+    ssize_t bytes_sent = write(get_poll_fds()[i].fd, buffer, bytes_read);
     if (bytes_sent == -1) {
       perror("write");
       close(get_poll_fds()[i].fd);
@@ -80,7 +63,7 @@ void OSInit::handle_client_data(size_t i) {
 }
 
 // pollイベントを処理する関数。ポーリングだけど、接続数が１００未満程度なら問題ない
-void OSInit::process_poll_events() {
+void RunServer::process_poll_events(ServerData &server_data) {
   // 監視対象のファイルディスクリプタ（pollfdリスト）をループでチェック
   for (size_t i = 0; i < get_poll_fds().size(); ++i) {
     // pollfd構造体のreventsにPOLLIN（読み込み可能イベント）がセットされている場合
@@ -96,23 +79,4 @@ void OSInit::process_poll_events() {
       }
     }
   }
-}
-
-// サーバーを構築する
-void OSInit::initServer() {
-  // サーバーの構築
-  server_data.set_address_data();
-  server_data.set_server_fd();
-  server_data.server_bind();
-  server_data.server_listen();
-
-  std::cout << "Startup complete!, Start-up completed!" << std::endl;
-  std::cout
-      << " The number of people who can connect to this server remaining is "
-      << MAX_CONNECTION << std::endl;
-  // メインループを実行
-  run();
-  close(server_data.get_server_fd());
-  // webserv.conf指定のポート番号でのリッスンを受け付ける
-  std::cout << "initServer" << std::endl;
 }
