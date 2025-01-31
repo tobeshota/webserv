@@ -1,5 +1,4 @@
 #include "ServerData.hpp"
-
 #include "OSInit.hpp"
 
 ServerData::ServerData()

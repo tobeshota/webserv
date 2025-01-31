@@ -1,6 +1,3 @@
-#ifndef SERVER_DATA_HPP
-#define SERVER_DATA_HPP
-
 #pragma once
 
 #include <netinet/in.h>
@@ -48,5 +45,3 @@ class ServerData : public IServerFunctions {
   int get_addrlen() const;
   void set_new_socket(int new_socket);
 };
-
-#endif

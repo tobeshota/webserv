@@ -1,5 +1,4 @@
-#ifndef RUN_SERVER_HPP
-#define RUN_SERVER_HPP
+#pragma once
 
 #include <poll.h>
 #include <sys/socket.h>
@@ -27,5 +26,3 @@ class RunServer {
   std::vector<pollfd> get_poll_fds();
   void close_server_fd();
 };
-
-#endif
