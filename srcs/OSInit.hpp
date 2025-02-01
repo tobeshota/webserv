@@ -9,7 +9,6 @@
 #include "ServerData.hpp"
 #include "webserv.hpp"
 
-#define PORT 8080
 #define MAX_CONNECTION 3
 
 // サーバーを構築する

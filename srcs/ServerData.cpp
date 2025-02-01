@@ -1,5 +1,6 @@
-#include "ServerData.hpp"
-#include "OSInit.hpp"
+// #include "ServerData.hpp"
+// #include "OSInit.hpp"
+#include "webserv.hpp"
 
 ServerData::ServerData()
     : server_fd(0), new_socket(0), addrlen(sizeof(address)) {}

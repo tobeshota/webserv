@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#define PORT 8080
 class IServerFunctions {
  public:
   virtual ~IServerFunctions() {}
