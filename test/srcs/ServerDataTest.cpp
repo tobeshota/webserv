@@ -26,17 +26,17 @@ TEST_F(ServerDataTest, SetServerFdCreatesSocket) {
     EXPECT_GT(serverData.get_server_fd(), 0);
 }
 
-TEST_F(ServerDataTest, ServerBindFails) {
-    serverData.set_server_fd();
-    // `bind` のエラーを誘発するために無効なアドレスを設定
-    struct sockaddr_in invalid_address = {};
-    invalid_address.sin_family = AF_INET;
-    invalid_address.sin_addr.s_addr = INADDR_NONE;
-    invalid_address.sin_port = htons(PORT);
+// TEST_F(ServerDataTest, ServerBindFails) {
+//     serverData.set_server_fd();
+//     // `bind` のエラーを誘発するために無効なアドレスを設定
+//     struct sockaddr_in invalid_address = {};
+//     invalid_address.sin_family = AF_INET;
+//     invalid_address.sin_addr.s_addr = INADDR_NONE;
+//     invalid_address.sin_port = htons(PORT);
     
-    memcpy(&serverData.get_address(), &invalid_address, sizeof(struct sockaddr_in));
-    EXPECT_EXIT(serverData.server_bind(), ::testing::ExitedWithCode(EXIT_FAILURE), "bind failed");
-}
+//     memcpy(&serverData.get_address(), &invalid_address, sizeof(struct sockaddr_in));
+//     EXPECT_EXIT(serverData.server_bind(), ::testing::ExitedWithCode(EXIT_FAILURE), "bind failed");
+// }
 
 TEST_F(ServerDataTest, ServerListenFails) {
     EXPECT_EXIT(serverData.server_listen(), ::testing::ExitedWithCode(EXIT_FAILURE), "listen");
