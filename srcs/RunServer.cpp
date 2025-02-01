@@ -12,8 +12,7 @@ std::vector<pollfd> RunServer::get_poll_fds() { return poll_fds; }
 void RunServer::run(ServerData &server_data) {
   while (true) {
     // pollシステムコールを呼び出し、イベントを待つ
-    int poll_count = 
-        poll(poll_fds.data(), poll_fds.size(), -1);
+    int poll_count = poll(poll_fds.data(), poll_fds.size(), -1);
     // デバッグ用にpoll_countを出力
     std::cout << poll_count << std::endl;
     // pollイベントを処理

@@ -7,8 +7,8 @@
 #include <iostream>
 #include <vector>
 
-#include "webserv.hpp"
 #include "ServerData.hpp"
+#include "webserv.hpp"
 
 class RunServer {
  private:
