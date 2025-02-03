@@ -20,7 +20,7 @@ class IServerFunctions {
   virtual void set_server_fd() = 0;
   virtual int get_server_fd() const = 0;
   virtual int get_new_socket() const = 0;
-  virtual struct sockaddr_in get_address() const = 0;
+  const virtual struct sockaddr_in& get_address() const = 0;
   virtual int get_addrlen() const = 0;
   virtual void set_new_socket(int new_socket) = 0;
 };
@@ -42,7 +42,7 @@ class ServerData : public IServerFunctions {
   void server_accept();
   int get_server_fd() const;
   int get_new_socket() const;
-  struct sockaddr_in get_address() const;
+  const struct sockaddr_in& get_address() const;
   int get_addrlen() const;
   void set_new_socket(int new_socket);
 };
