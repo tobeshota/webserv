@@ -3,7 +3,7 @@
 // #include "webserv.hpp"
 
 ServerData::ServerData()
-    : server_fd(0), new_socket(0), addrlen(sizeof(address)) {}
+    : server_fd(-1), new_socket(0), addrlen(sizeof(address)) {}
 
 ServerData::~ServerData() {}
 
