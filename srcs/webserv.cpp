@@ -1,5 +1,6 @@
-#include <iostream>
 #include <cstdlib>
+#include <iostream>
+
 #include "GenerateHTTPResponse.hpp"
 #include "OSInit.hpp"
 #include "ParseConf.hpp"
