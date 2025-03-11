@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Conf.hpp"
+#include "Directive.hpp"
 
 // Confクラス（webserv.confの設定まとめ）を生成する
 class ParseConf {

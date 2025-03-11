@@ -1,12 +1,12 @@
 #pragma once
 
-#include "Conf.hpp"
+#include "Directive.hpp"
 #include "HTTPRequest.hpp"
 #include "HTTPResponse.hpp"
 
-class Handler : public Conf, HTTPRequest, HTTPResponse {
+class Handler : public Directive, HTTPRequest, HTTPResponse {
  protected:
-  Conf _conf;
+  Directive _conf;
   HTTPResponse _http_response;
   Handler* nextHandler;
 
