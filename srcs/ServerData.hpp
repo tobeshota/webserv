@@ -10,6 +10,8 @@
 #include <vector>
 
 #define PORT 8080
+#define MAX_CONNECTION 3
+
 class IServerFunctions {
  public:
   virtual ~IServerFunctions() {}

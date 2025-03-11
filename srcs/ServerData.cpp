@@ -1,6 +1,4 @@
 #include "ServerData.hpp"
-// #include "OSInit.hpp"
-// #include "webserv.hpp"
 
 ServerData::ServerData()
     : server_fd(-1), new_socket(0), addrlen(sizeof(address)) {}
@@ -31,7 +29,7 @@ void ServerData::server_bind() {
 }
 
 void ServerData::server_listen() {
-  if (listen(server_fd, 3) < 0) {
+  if (listen(server_fd, MAX_CONNECTION) < 0) {
     perror("listen");
     exit(EXIT_FAILURE);
   }
@@ -50,9 +48,7 @@ int ServerData::get_server_fd() const { return server_fd; }
 
 int ServerData::get_new_socket() const { return new_socket; }
 
-const struct sockaddr_in& ServerData::get_address() const {
-  return address;
-}
+const struct sockaddr_in &ServerData::get_address() const { return address; }
 
 int ServerData::get_addrlen() const { return addrlen; }
 

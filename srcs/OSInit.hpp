@@ -7,9 +7,6 @@
 
 #include "RunServer.hpp"
 #include "ServerData.hpp"
-// #include "webserv.hpp"
-
-#define MAX_CONNECTION 3
 
 // サーバーを構築する
 // webserv.conf指定のポート番号でのリッスンを受け付ける

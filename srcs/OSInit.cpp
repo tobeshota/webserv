@@ -1,5 +1,4 @@
 #include "OSInit.hpp"
-// #include "webserv.hpp"
 
 OSInit::OSInit() {}
 
@@ -14,9 +13,6 @@ void OSInit::initServer(ServerData &server_data) {
   server_data.server_listen();
 
   std::cout << "Startup complete!, Start-up completed!" << std::endl;
-  std::cout
-      << " The number of people who can connect to this server remaining is "
-      << MAX_CONNECTION << std::endl;
 }
 
 void OSInit::set_serverpoll_data(ServerData &server_data,
