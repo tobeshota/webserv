@@ -19,7 +19,6 @@ int webserv(int argc, char **argv) {
   // const HTTPRequest http_request = ParseHTTPRequest();
   // HTTPリクエストからHTTPレスポンスを生成する
   // generate_http_response.handleRequest(http_request);
-  // 	break;
   // }
   std::cout << "webserv!" << std::endl;
   return EXIT_SUCCESS;
