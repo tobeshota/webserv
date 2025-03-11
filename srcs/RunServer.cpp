@@ -40,6 +40,7 @@ void RunServer::handle_new_connection(int server_fd) {
 
 // クライアントからのデータを処理する関数
 void RunServer::handle_client_data(size_t i) {
+  std::cout << "Handling client data" << std::endl;
   char buffer[1024];
   ssize_t bytes_read = read(get_poll_fds()[i].fd, buffer, sizeof(buffer));
   if (bytes_read == -1) {
@@ -65,7 +66,8 @@ void RunServer::handle_client_data(size_t i) {
   }
 }
 
-// pollイベントを処理する関数。ポーリングだけど、接続数が１００未満程度なら問題ない
+//pollにより、イベント発生してからforをするので、busy-waitではない
+// pollイベントを処理する関数。ポーリングだけど、「イベントが来るまで待機する」ので busy-wait ではない
 void RunServer::process_poll_events(ServerData &server_data) {
   // 監視対象のファイルディスクリプタ（pollfdリスト）をループでチェック
   for (size_t i = 0; i < get_poll_fds().size(); ++i) {

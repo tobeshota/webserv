@@ -52,7 +52,6 @@ foreach(test_source ${TEST_FILES})
   # インクルードパスをターゲットに設定
   target_include_directories(${test_name} PRIVATE 
     ${SOURCE_DIR}
-    ${SOURCE_DIR}/OSInit
   )
 
   # GoogleTest をリンク

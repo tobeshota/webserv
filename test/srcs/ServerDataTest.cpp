@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+
 #include "ServerData.hpp"
 
 // ✅ ServerData のテストフィクスチャ
@@ -20,15 +21,14 @@ class ServerDataTest : public ::testing::Test {
   }
 };
 
-
 // ✅ set_server_fd() のテスト
 TEST_F(ServerDataTest, SetServerFdCreatesValidSocket) {
   serverData->set_server_fd();
   int fd = serverData->get_server_fd();
-  
+
   // ソケットが作成されたかチェック
   EXPECT_GT(fd, 0) << "Socket creation failed!";
-  
+
   // ちゃんとソケットが有効かチェック
   int optval;
   socklen_t optlen = sizeof(optval);
@@ -44,13 +44,13 @@ TEST_F(ServerDataTest, DefaultServerFdIsInvalid) {
 // ✅ server_bind() のテスト
 TEST_F(ServerDataTest, ServerBindSuccess) {
   serverData->set_server_fd();
-  
+
   // アドレス設定
   struct sockaddr_in address = {};
   address.sin_family = AF_INET;
   address.sin_addr.s_addr = INADDR_ANY;
   address.sin_port = htons(8080);
-  serverData->set_new_socket(-1); // 念のためリセット
+  serverData->set_new_socket(-1);  // 念のためリセット
 
   // `serverData` のアドレス設定を適用
   *(struct sockaddr_in*)&serverData->get_address() = address;
@@ -61,14 +61,16 @@ TEST_F(ServerDataTest, ServerBindSuccess) {
   // バインド成功を確認
   struct sockaddr_in bound_addr;
   socklen_t addr_len = sizeof(bound_addr);
-  EXPECT_EQ(getsockname(serverData->get_server_fd(), (struct sockaddr*)&bound_addr, &addr_len), 0);
+  EXPECT_EQ(getsockname(serverData->get_server_fd(),
+                        (struct sockaddr*)&bound_addr, &addr_len),
+            0);
   EXPECT_EQ(bound_addr.sin_port, htons(8080));
 }
 
 // ✅ server_listen() のテスト
 TEST_F(ServerDataTest, ServerListenSuccess) {
   serverData->set_server_fd();
-  
+
   struct sockaddr_in address = {};
   address.sin_family = AF_INET;
   address.sin_addr.s_addr = INADDR_ANY;
@@ -81,14 +83,16 @@ TEST_F(ServerDataTest, ServerListenSuccess) {
   // サーバーがリスニング状態になっているかチェック
   int optval;
   socklen_t optlen = sizeof(optval);
-  EXPECT_EQ(getsockopt(serverData->get_server_fd(), SOL_SOCKET, SO_ACCEPTCONN, &optval, &optlen), 0);
+  EXPECT_EQ(getsockopt(serverData->get_server_fd(), SOL_SOCKET, SO_ACCEPTCONN,
+                       &optval, &optlen),
+            0);
   EXPECT_EQ(optval, 1);
 }
 
 // ✅ server_accept() のテスト（クライアントを作成して接続）
 TEST_F(ServerDataTest, ServerAcceptSuccess) {
   serverData->set_server_fd();
-  
+
   struct sockaddr_in address = {};
   address.sin_family = AF_INET;
   address.sin_addr.s_addr = INADDR_ANY;
@@ -103,7 +107,8 @@ TEST_F(ServerDataTest, ServerAcceptSuccess) {
   ASSERT_GT(client_fd, 0) << "Failed to create client socket";
 
   // クライアントがサーバーに接続
-  ASSERT_EQ(connect(client_fd, (struct sockaddr*)&address, sizeof(address)), 0) << "Client connection failed";
+  ASSERT_EQ(connect(client_fd, (struct sockaddr*)&address, sizeof(address)), 0)
+      << "Client connection failed";
 
   // サーバーがクライアントを受け入れる
   serverData->server_accept();
