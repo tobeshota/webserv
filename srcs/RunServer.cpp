@@ -6,7 +6,7 @@ RunServer::RunServer() {}
 
 RunServer::~RunServer() {}
 
-std::vector<pollfd> RunServer::get_poll_fds() { return poll_fds; }
+std::vector<pollfd>& RunServer::get_poll_fds() { return poll_fds; }
 
 // メインループを実行する関数
 void RunServer::run(ServerData &server_data) {
@@ -35,7 +35,9 @@ void RunServer::handle_new_connection(int server_fd) {
   pollfd client_fd_poll;
   client_fd_poll.fd = new_socket;
   client_fd_poll.events = POLLIN;
+  std::cout << "poll_fds.size() " << get_poll_fds().size() << std::endl;
   get_poll_fds().push_back(client_fd_poll);
+  std::cout << "poll_fds.size() " << get_poll_fds().size() << std::endl;
 }
 
 // クライアントからのデータを処理する関数
