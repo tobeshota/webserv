@@ -3,6 +3,7 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <set>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -15,11 +16,11 @@ class TOMLParser {
   TOMLParser();
   ~TOMLParser();
 
-  // ファイルからパース
-  Directive parseFromFile(const std::string& filename);
+  // ファイルからパース（エラー時はNULLを返す）
+  Directive* parseFromFile(const std::string& filename);
 
-  // 文字列からパース
-  Directive parseFromString(const std::string& content);
+  // 文字列からパース（エラー時はNULLを返す）
+  Directive* parseFromString(const std::string& content);
 
  private:
   // セクション名とセクションパスを表現する構造体
@@ -74,16 +75,18 @@ class TOMLParser {
   };
 
   // 解析に必要なメソッド
-  void parseLines(std::istream& stream, Directive& rootDirective);
-  void parseSectionHeader(const std::string& line, SectionPath& currentPath,
+  bool parseLines(std::istream& stream, Directive& rootDirective);
+  bool parseSectionHeader(const std::string& line, SectionPath& currentPath,
                           int lineNum);
-  void parseKeyValue(const std::string& line, Directive& directive,
+  bool parseKeyValue(const std::string& line, Directive& directive,
                      int lineNum);
-  std::vector<std::string> parseArray(const std::string& arrayStr, int lineNum);
-  std::string parseString(const std::string& str, size_t& pos, int lineNum);
+  std::vector<std::string> parseArray(const std::string& arrayStr, int lineNum,
+                                      bool& error);
+  std::string parseString(const std::string& str, size_t& pos, int lineNum,
+                          bool& error);
 
   // エスケープシーケンス処理
-  std::string unescapeString(const std::string& str, int lineNum);
+  std::string unescapeString(const std::string& str, int lineNum, bool& error);
 
   // ディレクティブ構築処理
   Directive& createNestedDirectives(Directive& rootDirective,
@@ -93,4 +96,19 @@ class TOMLParser {
   std::string trim(const std::string& str) const;
   bool startsWith(const std::string& str, const std::string& prefix) const;
   bool isWhitespace(char c) const;
+
+  // バリデーションチェック
+  bool isValidKey(const std::string& key) const;
+  bool hasDuplicateKeys(const Directive& directive,
+                        const std::string& key) const;
+  bool isTableArrayOrInlineTable(const std::string& line) const;
+  bool hasMultipleKeyValuesOnLine(const std::string& line) const;
+  bool isSectionOrKeyConflict(const Directive& directive,
+                              const SectionPath& path) const;
+  bool isDuplicateSection(const std::set<std::string>& sections,
+                          const std::string& sectionPath) const;
+
+  // エラー状態を記録するためのフラグ
+  bool m_hasError;
+  std::set<std::string> m_sections;
 };
