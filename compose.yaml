@@ -1,5 +1,7 @@
 services:
   webserv:
+    image: webserv_img
+    container_name: webserv
     build:
       context: .
       dockerfile: Dockerfile
