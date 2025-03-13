@@ -1,6 +1,6 @@
 FROM ubuntu:22.04
 
-LABEL org.opencontainers.image.title="Webserv"
+LABEL org.opencontainers.image.title="webserv"
 LABEL org.opencontainers.image.description="A lightweight HTTP server implementation."
 LABEL org.opencontainers.image.authors="Shotaro Mizuochi <smizuoch@student.42tokyo.jp>"
 LABEL org.opencontainers.image.source="https://github.com/tobeshota/webserv"
@@ -19,7 +19,6 @@ RUN apt-get update && apt-get install -y \
     graphviz \
     git \
     make \
-    bash \
     curl \
     lcov \
     && apt-get clean
