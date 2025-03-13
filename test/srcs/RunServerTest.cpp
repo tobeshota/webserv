@@ -46,7 +46,8 @@ TEST(RunServerTest, HandleNewConnectionTest2) {
   testing::internal::CaptureStderr();
   run_server.handle_new_connection(0);
   std::string actual = testing::internal::GetCapturedStderr();
-  // // 存在しないserver_fdを送ったときに標準エラー出力に"accept"が表示されるかテスト
+  // //
+  // 存在しないserver_fdを送ったときに標準エラー出力に"accept"が表示されるかテスト
   EXPECT_EQ(actual, "accept: Socket operation on non-socket\n");
 }
 
@@ -100,7 +101,8 @@ TEST(RunServerTest, HandleClientDataNoCrash) {
   // クライアントソケットを作成して接続
   int client_fd = socket(AF_INET, SOCK_STREAM, 0);
   ASSERT_NE(client_fd, -1);
-  ASSERT_NE(connect(client_fd, (sockaddr*)&server_addr, sizeof(server_addr)), -1);
+  ASSERT_NE(connect(client_fd, (sockaddr*)&server_addr, sizeof(server_addr)),
+            -1);
 
   // 新しい接続を受け入れる
   run_server.handle_new_connection(server_fd);
@@ -145,7 +147,8 @@ TEST(RunServerTest, HandleClientDataIfConditions) {
   // クライアントソケットを作成して接続
   int client_fd = socket(AF_INET, SOCK_STREAM, 0);
   ASSERT_NE(client_fd, -1);
-  ASSERT_NE(connect(client_fd, (sockaddr*)&server_addr, sizeof(server_addr)), -1);
+  ASSERT_NE(connect(client_fd, (sockaddr*)&server_addr, sizeof(server_addr)),
+            -1);
 
   // 新しい接続を受け入れる
   run_server.handle_new_connection(server_fd);
@@ -182,7 +185,8 @@ TEST(RunServerTest, HandleClientDataIfConditions) {
 //   server_addr.sin_family = AF_INET;
 //   server_addr.sin_addr.s_addr = INADDR_ANY;
 //   server_addr.sin_port = htons(8080);
-//   ASSERT_NE(bind(server_fd, (sockaddr*)&server_addr, sizeof(server_addr)), -1);
+//   ASSERT_NE(bind(server_fd, (sockaddr*)&server_addr, sizeof(server_addr)),
+//   -1);
 
 //   // サーバーソケットをリッスン
 //   ASSERT_NE(listen(server_fd, 1), -1);
@@ -196,7 +200,8 @@ TEST(RunServerTest, HandleClientDataIfConditions) {
 //   // クライアントソケットを作成して接続
 //   int client_fd = socket(AF_INET, SOCK_STREAM, 0);
 //   ASSERT_NE(client_fd, -1);
-//   ASSERT_NE(connect(client_fd, (sockaddr*)&server_addr, sizeof(server_addr)), -1);
+//   ASSERT_NE(connect(client_fd, (sockaddr*)&server_addr, sizeof(server_addr)),
+//   -1);
 
 //   // 新しい接続を受け入れる
 //   run_server.handle_new_connection(server_fd);
@@ -218,154 +223,157 @@ TEST(RunServerTest, HandleClientDataIfConditions) {
 
 // 通常のデータ受信と送信をテスト
 TEST(RunServerTest, HandleClientDataNormalFlow) {
-    RunServer run_server;
-    
-    // サーバーソケットのセットアップ
-    int server_fd = socket(AF_INET, SOCK_STREAM, 0);
-    ASSERT_NE(server_fd, -1);
+  RunServer run_server;
 
-    sockaddr_in server_addr;
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = INADDR_ANY;
-    server_addr.sin_port = htons(8080);
-    ASSERT_NE(bind(server_fd, (sockaddr*)&server_addr, sizeof(server_addr)), -1);
-    ASSERT_NE(listen(server_fd, 1), -1);
+  // サーバーソケットのセットアップ
+  int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+  ASSERT_NE(server_fd, -1);
 
-    // クライアント接続
-    int client_fd = socket(AF_INET, SOCK_STREAM, 0);
-    ASSERT_NE(client_fd, -1);
-    ASSERT_NE(connect(client_fd, (sockaddr*)&server_addr, sizeof(server_addr)), -1);
+  sockaddr_in server_addr;
+  server_addr.sin_family = AF_INET;
+  server_addr.sin_addr.s_addr = INADDR_ANY;
+  server_addr.sin_port = htons(8080);
+  ASSERT_NE(bind(server_fd, (sockaddr*)&server_addr, sizeof(server_addr)), -1);
+  ASSERT_NE(listen(server_fd, 1), -1);
 
-    // 接続を受け付け
-    int accepted_fd = accept(server_fd, nullptr, nullptr);
-    ASSERT_NE(accepted_fd, -1);
+  // クライアント接続
+  int client_fd = socket(AF_INET, SOCK_STREAM, 0);
+  ASSERT_NE(client_fd, -1);
+  ASSERT_NE(connect(client_fd, (sockaddr*)&server_addr, sizeof(server_addr)),
+            -1);
 
-    // poll_fdsにクライアントfdを追加
-    pollfd client_poll_fd;
-    client_poll_fd.fd = accepted_fd;
-    client_poll_fd.events = POLLIN;
-    run_server.add_poll_fd(client_poll_fd);
+  // 接続を受け付け
+  int accepted_fd = accept(server_fd, nullptr, nullptr);
+  ASSERT_NE(accepted_fd, -1);
 
-    // テストデータを送信
-    const char* test_msg = "Test Message";
-    write(client_fd, test_msg, strlen(test_msg));
+  // poll_fdsにクライアントfdを追加
+  pollfd client_poll_fd;
+  client_poll_fd.fd = accepted_fd;
+  client_poll_fd.events = POLLIN;
+  run_server.add_poll_fd(client_poll_fd);
 
-    // 標準出力をキャプチャ
-    testing::internal::CaptureStdout();
-    run_server.handle_client_data(0);
-    std::string output = testing::internal::GetCapturedStdout();
+  // テストデータを送信
+  const char* test_msg = "Test Message";
+  write(client_fd, test_msg, strlen(test_msg));
 
-    // 出力を検証
-    EXPECT_NE(output.find("Handling client data"), std::string::npos);
-    EXPECT_NE(output.find("Received: Test Message"), std::string::npos);
+  // 標準出力をキャプチャ
+  testing::internal::CaptureStdout();
+  run_server.handle_client_data(0);
+  std::string output = testing::internal::GetCapturedStdout();
 
-    // 接続が維持されていることを確認
-    EXPECT_EQ(run_server.get_poll_fds().size(), 1);
+  // 出力を検証
+  EXPECT_NE(output.find("Handling client data"), std::string::npos);
+  EXPECT_NE(output.find("Received: Test Message"), std::string::npos);
 
-    // クライアントが応答を受信できることを確認
-    char buffer[1024] = {0};
-    ssize_t received = read(client_fd, buffer, sizeof(buffer));
-    EXPECT_GT(received, 0);
-    EXPECT_STREQ(buffer, test_msg);
+  // 接続が維持されていることを確認
+  EXPECT_EQ(run_server.get_poll_fds().size(), 1);
 
-    // クリーンアップ
-    close(client_fd);
-    close(accepted_fd);
-    close(server_fd);
+  // クライアントが応答を受信できることを確認
+  char buffer[1024] = {0};
+  ssize_t received = read(client_fd, buffer, sizeof(buffer));
+  EXPECT_GT(received, 0);
+  EXPECT_STREQ(buffer, test_msg);
+
+  // クリーンアップ
+  close(client_fd);
+  close(accepted_fd);
+  close(server_fd);
 }
 
 // クライアント切断のテスト
 TEST(RunServerTest, HandleClientDataDisconnect) {
-    RunServer run_server;
-    
-    // サーバーソケットのセットアップ
-    int server_fd = socket(AF_INET, SOCK_STREAM, 0);
-    ASSERT_NE(server_fd, -1);
+  RunServer run_server;
 
-    sockaddr_in server_addr;
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = INADDR_ANY;
-    server_addr.sin_port = htons(8080);
-    ASSERT_NE(bind(server_fd, (sockaddr*)&server_addr, sizeof(server_addr)), -1);
-    ASSERT_NE(listen(server_fd, 1), -1);
+  // サーバーソケットのセットアップ
+  int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+  ASSERT_NE(server_fd, -1);
 
-    // クライアント接続
-    int client_fd = socket(AF_INET, SOCK_STREAM, 0);
-    ASSERT_NE(client_fd, -1);
-    ASSERT_NE(connect(client_fd, (sockaddr*)&server_addr, sizeof(server_addr)), -1);
+  sockaddr_in server_addr;
+  server_addr.sin_family = AF_INET;
+  server_addr.sin_addr.s_addr = INADDR_ANY;
+  server_addr.sin_port = htons(8080);
+  ASSERT_NE(bind(server_fd, (sockaddr*)&server_addr, sizeof(server_addr)), -1);
+  ASSERT_NE(listen(server_fd, 1), -1);
 
-    // 接続を受け付け
-    int accepted_fd = accept(server_fd, nullptr, nullptr);
-    ASSERT_NE(accepted_fd, -1);
+  // クライアント接続
+  int client_fd = socket(AF_INET, SOCK_STREAM, 0);
+  ASSERT_NE(client_fd, -1);
+  ASSERT_NE(connect(client_fd, (sockaddr*)&server_addr, sizeof(server_addr)),
+            -1);
 
-    // poll_fdsにクライアントfdを追加
-    pollfd client_poll_fd;
-    client_poll_fd.fd = accepted_fd;
-    client_poll_fd.events = POLLIN;
-    run_server.add_poll_fd(client_poll_fd);
+  // 接続を受け付け
+  int accepted_fd = accept(server_fd, nullptr, nullptr);
+  ASSERT_NE(accepted_fd, -1);
 
-    // クライアントを切断
-    close(client_fd);
+  // poll_fdsにクライアントfdを追加
+  pollfd client_poll_fd;
+  client_poll_fd.fd = accepted_fd;
+  client_poll_fd.events = POLLIN;
+  run_server.add_poll_fd(client_poll_fd);
 
-    // 標準出力をキャプチャ
-    testing::internal::CaptureStdout();
-    run_server.handle_client_data(0);
-    std::string output = testing::internal::GetCapturedStdout();
+  // クライアントを切断
+  close(client_fd);
 
-    // 切断メッセージを確認
-    EXPECT_NE(output.find("Client disconnected"), std::string::npos);
+  // 標準出力をキャプチャ
+  testing::internal::CaptureStdout();
+  run_server.handle_client_data(0);
+  std::string output = testing::internal::GetCapturedStdout();
 
-    // poll_fdsから削除されていることを確認
-    EXPECT_EQ(run_server.get_poll_fds().size(), 0);
+  // 切断メッセージを確認
+  EXPECT_NE(output.find("Client disconnected"), std::string::npos);
 
-    // クリーンアップ
-    close(accepted_fd);
-    close(server_fd);
+  // poll_fdsから削除されていることを確認
+  EXPECT_EQ(run_server.get_poll_fds().size(), 0);
+
+  // クリーンアップ
+  close(accepted_fd);
+  close(server_fd);
 }
 
 // 書き込みエラーのテスト
 TEST(RunServerTest, HandleClientDataWriteError) {
-    RunServer run_server;
-    
-    // サーバーソケットのセットアップ
-    int server_fd = socket(AF_INET, SOCK_STREAM, 0);
-    ASSERT_NE(server_fd, -1);
+  RunServer run_server;
 
-    sockaddr_in server_addr;
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = INADDR_ANY;
-    server_addr.sin_port = htons(8080);
-    ASSERT_NE(bind(server_fd, (sockaddr*)&server_addr, sizeof(server_addr)), -1);
-    ASSERT_NE(listen(server_fd, 1), -1);
+  // サーバーソケットのセットアップ
+  int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+  ASSERT_NE(server_fd, -1);
 
-    // クライアント接続
-    int client_fd = socket(AF_INET, SOCK_STREAM, 0);
-    ASSERT_NE(client_fd, -1);
-    ASSERT_NE(connect(client_fd, (sockaddr*)&server_addr, sizeof(server_addr)), -1);
+  sockaddr_in server_addr;
+  server_addr.sin_family = AF_INET;
+  server_addr.sin_addr.s_addr = INADDR_ANY;
+  server_addr.sin_port = htons(8080);
+  ASSERT_NE(bind(server_fd, (sockaddr*)&server_addr, sizeof(server_addr)), -1);
+  ASSERT_NE(listen(server_fd, 1), -1);
 
-    // 接続を受け付け
-    int accepted_fd = accept(server_fd, nullptr, nullptr);
-    ASSERT_NE(accepted_fd, -1);
+  // クライアント接続
+  int client_fd = socket(AF_INET, SOCK_STREAM, 0);
+  ASSERT_NE(client_fd, -1);
+  ASSERT_NE(connect(client_fd, (sockaddr*)&server_addr, sizeof(server_addr)),
+            -1);
 
-    // poll_fdsに無効なfdを追加（書き込みエラーを発生させる）
-    pollfd client_poll_fd;
-    client_poll_fd.fd = -1;  // 無効なfd
-    client_poll_fd.events = POLLIN;
-    run_server.add_poll_fd(client_poll_fd);
+  // 接続を受け付け
+  int accepted_fd = accept(server_fd, nullptr, nullptr);
+  ASSERT_NE(accepted_fd, -1);
 
-    // 標準エラー出力をキャプチャ
-    testing::internal::CaptureStderr();
-    run_server.handle_client_data(0);
-    std::string error_output = testing::internal::GetCapturedStderr();
+  // poll_fdsに無効なfdを追加（書き込みエラーを発生させる）
+  pollfd client_poll_fd;
+  client_poll_fd.fd = -1;  // 無効なfd
+  client_poll_fd.events = POLLIN;
+  run_server.add_poll_fd(client_poll_fd);
 
-    // エラーメッセージを確認
-    EXPECT_NE(error_output.find("read"), std::string::npos);
+  // 標準エラー出力をキャプチャ
+  testing::internal::CaptureStderr();
+  run_server.handle_client_data(0);
+  std::string error_output = testing::internal::GetCapturedStderr();
 
-    // poll_fdsから削除されていることを確認
-    EXPECT_EQ(run_server.get_poll_fds().size(), 0);
+  // エラーメッセージを確認
+  EXPECT_NE(error_output.find("read"), std::string::npos);
 
-    // クリーンアップ
-    close(client_fd);
-    close(accepted_fd);
-    close(server_fd);
+  // poll_fdsから削除されていることを確認
+  EXPECT_EQ(run_server.get_poll_fds().size(), 0);
+
+  // クリーンアップ
+  close(client_fd);
+  close(accepted_fd);
+  close(server_fd);
 }
