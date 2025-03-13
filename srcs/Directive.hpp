@@ -38,17 +38,19 @@ class Directive {
   const DirectiveList &children() const { return m_children; }
 
   // 現在のディレクティブからキーに対する値を階層すべて探し取得（なければ空文字列）
-  std::vector<std::string> getValues(const std::string &key, bool recursive = true) const {
+  std::vector<std::string> getValues(const std::string &key,
+                                     bool recursive = true) const {
     std::vector<std::string> result;
     KVMap::const_iterator it = m_keyValues.find(key);
     if (it != m_keyValues.end()) {
       result = it->second;
     }
-    
+
     // 再帰検索が有効な場合のみ、子ディレクティブも探索
     if (recursive) {
       for (std::size_t i = 0; i < m_children.size(); ++i) {
-        std::vector<std::string> childValues = m_children[i].getValues(key, recursive);
+        std::vector<std::string> childValues =
+            m_children[i].getValues(key, recursive);
         result.insert(result.end(), childValues.begin(), childValues.end());
       }
     }
