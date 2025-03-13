@@ -37,6 +37,30 @@ class Directive {
   DirectiveList &children() { return m_children; }
   const DirectiveList &children() const { return m_children; }
 
+  // キーに対する値を階層すべて探し取得（なければ空文字列）
+  std::vector<std::string> getValues(const std::string &key) const {
+    std::vector<std::string> result;
+    const KVMap &map = m_keyValues;
+    KVMap::const_iterator it = map.find(key);
+    if (it != map.end()) {
+      result = it->second;
+    }
+    for (std::size_t i = 0; i < m_children.size(); ++i) {
+      std::vector<std::string> childResult = m_children[i].getValues(key);
+      result.insert(result.end(), childResult.begin(), childResult.end());
+    }
+    return result;
+  }
+
+  // キーに対する値を階層すべて探し取得（最初に見つかったもの）
+  std::string getValue(const std::string &key) const {
+    std::vector<std::string> values = getValues(key);
+    if (values.empty()) {
+      return "";
+    }
+    return values[0];
+  }
+
  private:
   std::string m_name;        // ディレクティブ名
   KVMap m_keyValues;         // キー -> 値（複数）のマップ
