@@ -1,6 +1,4 @@
 #include "RunServer.hpp"
-// #include "OSInit.hpp"
-// #include "webserv.hpp"
 
 RunServer::RunServer() {}
 

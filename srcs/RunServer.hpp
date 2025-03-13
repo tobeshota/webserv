@@ -8,15 +8,10 @@
 #include <vector>
 
 #include "ServerData.hpp"
-// #include "webserv.hpp"
 
 class RunServer {
  private:
   std::vector<pollfd> poll_fds;
-
-  // void process_poll_events(ServerData &server_data);
-  // void handle_new_connection(int server_fd);
-  // void handle_client_data(size_t i);
 
  public:
   RunServer(/* args */);

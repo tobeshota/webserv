@@ -46,7 +46,7 @@ TEST(RunServerTest, HandleNewConnectionTest2) {
   testing::internal::CaptureStderr();
   run_server.handle_new_connection(0);
   std::string actual = testing::internal::GetCapturedStderr();
-  // //
+
   // 存在しないserver_fdを送ったときに標準エラー出力に"accept"が表示されるかテスト
   EXPECT_EQ(actual, "accept: Socket operation on non-socket\n");
 }
@@ -171,7 +171,7 @@ TEST(RunServerTest, HandleClientDataIfConditions) {
   close(server_fd);
 }
 
-// // クライアントデータ処理のエラーハンドリングを確認するテスト
+// クライアントデータ処理のエラーハンドリングを確認するテスト
 // TEST(RunServerTest, HandleClientDataErrorHandling) {
 //   RunServer run_server;
 //   ServerData server_data;
