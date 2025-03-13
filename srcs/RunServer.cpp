@@ -6,7 +6,7 @@ RunServer::RunServer() {}
 
 RunServer::~RunServer() {}
 
-std::vector<pollfd>& RunServer::get_poll_fds() { return poll_fds; }
+std::vector<pollfd> &RunServer::get_poll_fds() { return poll_fds; }
 
 // メインループを実行する関数
 void RunServer::run(ServerData &server_data) {
@@ -68,8 +68,9 @@ void RunServer::handle_client_data(size_t i) {
   }
 }
 
-//pollにより、イベント発生してからforをするので、busy-waitではない
-// pollイベントを処理する関数。ポーリングだけど、「イベントが来るまで待機する」ので busy-wait ではない
+// pollにより、イベント発生してからforをするので、busy-waitではない
+//  pollイベントを処理する関数。ポーリングだけど、「イベントが来るまで待機する」ので
+//  busy-wait ではない
 void RunServer::process_poll_events(ServerData &server_data) {
   // 監視対象のファイルディスクリプタ（pollfdリスト）をループでチェック
   for (size_t i = 0; i < get_poll_fds().size(); ++i) {

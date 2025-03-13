@@ -17,6 +17,18 @@ TEST(RunServerTest, AddPollFdTest) {
   EXPECT_EQ(server.get_poll_fds()[0].fd, 3);
 }
 
+// pollfdの削除テスト
+TEST(RunServerTest, RemovePollFdTest) {
+  RunServer server;
+  pollfd test_fd;
+  test_fd.fd = 3;
+  test_fd.events = POLLIN;
+  server.add_poll_fd(test_fd);
+  server.remove_poll_fd(3);
+
+  EXPECT_EQ(server.get_poll_fds().size(), 0);
+}
+
 // クライアント接続処理テスト（モック）
 TEST(RunServerTest, HandleNewConnectionTest) {
   ServerData server;
@@ -40,6 +52,21 @@ TEST(RunServerTest, HandleNewConnectionTest) {
   close(client_fd);
 }
 
+// 存在しないserver_fdを送ったときに標準エラー出力に"accept"が表示されるかテスト
+TEST(RunServerTest, HandleNewConnectionTest2) {
+  RunServer run_server;
+  run_server.handle_new_connection(0);
+  // // 存在しないserver_fdを送ったときに標準エラー出力に"accept"が表示されるかテスト
+  EXPECT_EQ(run_server.handle_new_connection(0), -1);
+
+}
+
+// 無効なファイルディスクリプタの処理テスト
+TEST(RunServerTest, HandleInvalidFdTest) {
+  RunServer server;
+  EXPECT_EQ(server.handle_new_connection(-1), -1);
+}
+
 // クライアントデータ処理テスト
 TEST(RunServerTest, HandleClientDataTest) {
   RunServer run_server;
@@ -59,6 +86,17 @@ TEST(RunServerTest, HandleClientDataTest) {
 
   close(pipe_fds[0]);
   close(pipe_fds[1]);
+}
+
+// クライアントデータ処理のエラーテスト
+TEST(RunServerTest, HandleClientDataErrorTest) {
+  RunServer server;
+  pollfd client_fd_poll;
+  client_fd_poll.fd = -1;
+  client_fd_poll.events = POLLIN;
+  server.add_poll_fd(client_fd_poll);
+
+  EXPECT_EQ(server.handle_client_data(0), -1);
 }
 
 // イベント処理テスト

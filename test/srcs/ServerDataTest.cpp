@@ -114,3 +114,32 @@ TEST_F(ServerDataTest, ServerAcceptSuccess) {
   serverData->server_accept();
   EXPECT_GT(serverData->get_new_socket(), 0) << "Server accept failed";
 }
+
+// ✅ set_address_data() のテスト
+TEST_F(ServerDataTest, SetAddressData) {
+  serverData->set_address_data();
+  struct sockaddr_in address = serverData->get_address();
+  EXPECT_EQ(address.sin_family, AF_INET);
+  EXPECT_EQ(address.sin_addr.s_addr, INADDR_ANY);
+  EXPECT_EQ(address.sin_port, htons(8080));
+}
+
+// ✅ set_new_socket() のテスト
+TEST_F(ServerDataTest, SetNewSocket) {
+  serverData->set_new_socket(5);
+  EXPECT_EQ(serverData->get_new_socket(), 5);
+}
+
+// ✅ close_server_fd() のテスト
+TEST_F(ServerDataTest, CloseServerFd) {
+  serverData->set_server_fd();
+  serverData->close_server_fd();
+  EXPECT_EQ(serverData->get_server_fd(), -1);
+}
+
+// ✅ close_new_socket() のテスト
+TEST_F(ServerDataTest, CloseNewSocket) {
+  serverData->set_new_socket(5);
+  serverData->close_new_socket();
+  EXPECT_EQ(serverData->get_new_socket(), -1);
+}

@@ -8,9 +8,10 @@ ServerData::~ServerData() {}
 void ServerData::set_address_data() {
   // アドレスデータの設定
   address.sin_family = AF_INET;  // IPv4アドレスファミリーを指定
-  address.sin_addr.s_addr = INADDR_ANY; //全てのローカルインターフェースにバインド（バインドとは、ソケットをアドレスに関連付けること）
+  address.sin_addr.s_addr =
+      INADDR_ANY;  // 全てのローカルインターフェースにバインド（バインドとは、ソケットをアドレスに関連付けること）
   // ここにwebserv.confで指定されたポート番号を入れる。PORTは仮
-  address.sin_port = htons(PORT); // ポート番号を設定
+  address.sin_port = htons(PORT);  // ポート番号を設定
 }
 
 void ServerData::set_server_fd() {

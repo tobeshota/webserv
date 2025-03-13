@@ -24,7 +24,7 @@ class RunServer {
 
   void run(ServerData &server_data);
   void add_poll_fd(pollfd poll_fd);
-  std::vector<pollfd>& get_poll_fds();
+  std::vector<pollfd> &get_poll_fds();
   void close_server_fd();
 
   void process_poll_events(ServerData &server_data);
