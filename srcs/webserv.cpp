@@ -5,22 +5,25 @@
 #include "OSInit.hpp"
 #include "ParseConf.hpp"
 #include "ParseHTTPRequest.hpp"
+#include "TOMLParser.hpp"
 
-int webserv(int argc, char **argv) {
-  // GenerateHTTPResponse generate_http_response;
+int webserv(int argc, char** argv) {
   (void)argc;
   (void)argv;
 
-  // Confクラス（webserv.confの設定まとめ）を生成する
-  // ParseConf();
-  // サーバーを構築する
-  // OSInit();
-  // while (1) {
-  // HTTPリクエストをパースする
-  // const HTTPRequest http_request = ParseHTTPRequest();
-  // HTTPリクエストからHTTPレスポンスを生成する
-  // generate_http_response.handleRequest(http_request);
-  // }
-  std::cout << "webserv!" << std::endl;
+  ServerData server_data;
+  OSInit os;
+  RunServer run_server;
+
+  TOMLParser toml_parser;
+  Directive* directive = toml_parser.parseFromFile("./conf/webserv.conf");
+
+  printDirective(*directive);  //  for debug
+
+  os.initServer(server_data);
+  os.set_serverpoll_data(server_data, run_server);
+  // メインループを実行
+  run_server.run(server_data);
+  os.close_server_fd(server_data);
   return EXIT_SUCCESS;
 }

@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: tobeshota <tobeshota@student.42.fr>        +#+  +:+       +#+         #
+#    By: yoshimurahiro <yoshimurahiro@student.42    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/09/12 09:34:52 by tobeshota         #+#    #+#              #
-#    Updated: 2025/03/13 10:53:30 by tobeshota        ###   ########.fr        #
+#    Updated: 2025/03/13 11:37:06 by yoshimurahi      ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -20,7 +20,7 @@ SRCS_DIR		=	srcs/
 INCS_DIR		=	srcs/
 OBJS_DIR		=	objs/
 
-SRCS			=	$(wildcard $(SRCS_DIR)*.cpp)
+SRCS 			=   $(shell find $(SRCS_DIR) -type f -name "*.cpp")
 HEADERS			=	$(wildcard $(INCS_DIR)*.hpp)
 SHS				=	$(wildcard *.sh)
 OBJS			=	$(patsubst %.cpp, $(OBJS_DIR)%.o, $(SRCS))
