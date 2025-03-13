@@ -6,11 +6,12 @@
 #    By: yoshimurahiro <yoshimurahiro@student.42    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/09/12 09:34:52 by tobeshota         #+#    #+#              #
-#    Updated: 2025/03/11 14:54:30 by yoshimurahi      ###   ########.fr        #
+#    Updated: 2025/03/13 11:37:06 by yoshimurahi      ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
 NAME			=	webserv
+CONTAINER		=	webserv
 CC				=	c++
 FLAGS			=	-Wall -Wextra -Werror -std=c++98 -pedantic-errors
 RM				=	rm -rf
@@ -51,6 +52,15 @@ fclean: clean
 
 re:		fclean all
 
+up:
+	docker compose up -d
+
+run: up
+	docker exec -it $(CONTAINER) /bin/bash
+
+down:
+	docker compose down
+
 fmt:
 	make fmt -C test/
 	$(if $(SRCS), clang-format --style=Google -i $(SRCS))
@@ -70,4 +80,4 @@ coverage:
 doc:
 	make doc -C docs/ -f doc.mk
 
-.PHONY:	all clean fclean re fmt debug address test doc
+.PHONY:	all clean fclean re up run down fmt debug address test coverage doc
