@@ -73,9 +73,7 @@ std::map<unsigned long, std::string> StatusCodes::CreateStatusMessages() {
   return status_messages;
 }
 
-StatusCodes::StatusCodes() {
-  status_messages = CreateStatusMessages();
-}
+StatusCodes::StatusCodes() { status_messages = CreateStatusMessages(); }
 
 std::string StatusCodes::getMessage(unsigned long code) {
   std::map<unsigned long, std::string> status_messages = CreateStatusMessages();
@@ -108,4 +106,3 @@ bool StatusCodes::isValid(unsigned long code) {
     return false;
   }
 }
-
