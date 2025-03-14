@@ -66,6 +66,38 @@ class Directive {
     return values[0];
   }
 
+  // 指定された階層のディレクティブを探す
+  const Directive* findDirective(const std::vector<std::string>& dirNames) const {
+    if (dirNames.empty()) {
+      return NULL;
+    }
+    
+    // 最初の名前に一致する子ディレクティブを探す
+    for (std::size_t i = 0; i < m_children.size(); ++i) {
+      if (m_children[i].name() == dirNames[0]) {
+        // これが最後の名前なら、その子ディレクティブを返す
+        if (dirNames.size() == 1) {
+          return &m_children[i];
+        }
+        
+        // 残りの階層を探索するために、ベクトルの残りを渡す
+        std::vector<std::string> remainingNames(dirNames.begin() + 1, dirNames.end());
+        const Directive* result = m_children[i].findDirective(remainingNames);
+        if (result) {
+          return result;
+        }
+      }
+    }
+    
+    // 見つからなかった場合はNULLを返す
+    return NULL;
+  }
+
+  // 初期化リストを使って呼び出し可能なバージョン
+  const Directive* findDirective(std::initializer_list<std::string> dirNames) const {
+    return findDirective(std::vector<std::string>(dirNames));
+  }
+
  private:
   std::string m_name;        // ディレクティブ名
   KVMap m_keyValues;         // キー -> 値（複数）のマップ
