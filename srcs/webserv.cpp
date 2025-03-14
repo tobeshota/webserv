@@ -13,9 +13,9 @@ int webserv(int argc, char** argv) {
   RunServer run_server;
 
   TOMLParser toml_parser;
-  Directive* directive = toml_parser.parseFromFile("./conf/webserv.conf");
+  // Directive* directive = toml_parser.parseFromFile("./conf/webserv.conf");
 
-  printDirective(*directive);  //  for debug
+  // printDirective(*directive);  //  for debug
 
   os.initServer(server_data);
   os.set_serverpoll_data(server_data, run_server);
