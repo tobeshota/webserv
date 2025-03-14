@@ -73,10 +73,39 @@ std::map<unsigned long, std::string> StatusCodes::CreateStatusMessages() {
   return status_messages;
 }
 
-// int main()
-// {
-//     StatusCodes status_codes;
-//     std::map<unsigned long, std::string> status_messages =
-//     status_codes.CreateStatusMessages(); std::cout << status_messages[400] <<
-//     std::endl; return 0;
-// }
+StatusCodes::StatusCodes() {
+  status_messages = CreateStatusMessages();
+}
+
+std::string StatusCodes::getMessage(unsigned long code) {
+  std::map<unsigned long, std::string> status_messages = CreateStatusMessages();
+  return status_messages[code];
+}
+
+bool StatusCodes::isError(unsigned long code) {
+  std::map<unsigned long, std::string> status_messages = CreateStatusMessages();
+  if (code >= 400) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool StatusCodes::isSuccess(unsigned long code) {
+  std::map<unsigned long, std::string> status_messages = CreateStatusMessages();
+  if (code < 400) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool StatusCodes::isValid(unsigned long code) {
+  std::map<unsigned long, std::string> status_messages = CreateStatusMessages();
+  if (status_messages.find(code) != status_messages.end()) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
