@@ -104,7 +104,8 @@ class Directive {
   }
 
   // C++98互換の便利メソッド - 2つのパラメータ
-  const Directive *findDirective(const std::string &dir1, const std::string &dir2) const {
+  const Directive *findDirective(const std::string &dir1,
+                                 const std::string &dir2) const {
     std::vector<std::string> dirs;
     dirs.push_back(dir1);
     dirs.push_back(dir2);
@@ -112,8 +113,9 @@ class Directive {
   }
 
   // C++98互換の便利メソッド - 3つのパラメータ
-  const Directive *findDirective(const std::string &dir1, const std::string &dir2, 
-                               const std::string &dir3) const {
+  const Directive *findDirective(const std::string &dir1,
+                                 const std::string &dir2,
+                                 const std::string &dir3) const {
     std::vector<std::string> dirs;
     dirs.push_back(dir1);
     dirs.push_back(dir2);
