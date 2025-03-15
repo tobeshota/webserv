@@ -56,32 +56,33 @@ void RunServer::handle_client_data(size_t i) {
 
   buffer[bytes_read] = '\0';
 
-  // HTTPレスポンスを作成
-  HTTPResponse response;
-  response.setStatus(200, "OK");
-  response.setHeader("Content-Type", "text/plain");
-  response.setBody("Hello from WebServ!");
+  // // HTTPレスポンスを作成
+  // HTTPResponse response;
+  // response.setStatus(200, "OK");
+  // response.setHeader("Content-Type", "text/plain");
+  // response.setBody("Hello from WebServ!");
 
   // std::string response_str = response.toString();
-  std::string response_str =
-      "HTTP/1.1 200 OK\r\n"
-      "Content-Type: text/plain\r\n"
-      "Content-Length: 13\r\n"
-      "Connection: close\r\n"
-      "\r\n"
-      "Hello, world!";
+  // std::string response_str =
+  //     "HTTP/1.1 200 OK\r\n"
+  //     "Content-Type: text/plain\r\n"
+  //     "Content-Length: 13\r\n"
+  //     "Connection: close\r\n"
+  //     "\r\n"
+  //     "Hello, world!";
 
   // send()を使用してレスポンスを送信
-  ssize_t bytes_sent =
-      send(get_poll_fds()[i].fd, response_str.c_str(), response_str.length(),
-           MSG_NOSIGNAL);  // SIGPIPEを防ぐためのフラグ
+  // ssize_t bytes_sent =
+  //     send(get_poll_fds()[i].fd, response_str.c_str(), response_str.length(),
+  //          MSG_NOSIGNAL);  // SIGPIPEを防ぐためのフラグ
 
-  if (bytes_sent == -1) {
-    perror("send");
-    close(get_poll_fds()[i].fd);
-    get_poll_fds().erase(get_poll_fds().begin() + i);
-  }
+  // if (bytes_sent == -1) {
+  //   perror("send");
+  //   close(get_poll_fds()[i].fd);
+  //   get_poll_fds().erase(get_poll_fds().begin() + i);
+  // }
 }
+
 
 // pollにより、イベント発生してからforをするので、busy-waitではない
 //  pollイベントを処理する関数。ポーリングだけど、「イベントが来るまで待機する」ので
