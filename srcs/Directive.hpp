@@ -1,4 +1,5 @@
 #pragma once
+
 #include <iostream>
 #include <map>
 #include <string>
@@ -95,10 +96,31 @@ class Directive {
     return NULL;
   }
 
-  // 初期化リストを使って呼び出し可能なバージョン
-  const Directive *findDirective(
-      std::initializer_list<std::string> dirNames) const {
-    return findDirective(std::vector<std::string>(dirNames));
+  // C++98互換の便利メソッド - 1つのパラメータ
+  const Directive *findDirective(const std::string &dir1) const {
+    std::vector<std::string> dirs;
+    dirs.push_back(dir1);
+    return findDirective(dirs);
+  }
+
+  // C++98互換の便利メソッド - 2つのパラメータ
+  const Directive *findDirective(const std::string &dir1,
+                                 const std::string &dir2) const {
+    std::vector<std::string> dirs;
+    dirs.push_back(dir1);
+    dirs.push_back(dir2);
+    return findDirective(dirs);
+  }
+
+  // C++98互換の便利メソッド - 3つのパラメータ
+  const Directive *findDirective(const std::string &dir1,
+                                 const std::string &dir2,
+                                 const std::string &dir3) const {
+    std::vector<std::string> dirs;
+    dirs.push_back(dir1);
+    dirs.push_back(dir2);
+    dirs.push_back(dir3);
+    return findDirective(dirs);
   }
 
  private:
