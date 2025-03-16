@@ -42,6 +42,7 @@ void RunServer::handle_new_connection(int server_fd) {
 
 // クライアントからのデータを処理する関数
 void RunServer::handle_client_data(size_t i) {
+  PrintResponse print_response;
   char buffer[4096];
   ssize_t bytes_read = recv(get_poll_fds()[i].fd, buffer, sizeof(buffer) - 1, 0);
 
@@ -56,6 +57,9 @@ void RunServer::handle_client_data(size_t i) {
 
   buffer[bytes_read] = '\0';
 
+
+//----------------------------------------------
+//送られたことのテスト。本来は、HTTPリクエストをパースする、メソッドを呼び出す
   // // HTTPレスポンスを作成
   // HTTPResponse response;
   // response.setStatus(200, "OK");
@@ -81,6 +85,16 @@ void RunServer::handle_client_data(size_t i) {
   //   close(get_poll_fds()[i].fd);
   //   get_poll_fds().erase(get_poll_fds().begin() + i);
   // }
+
+  //-------------------------------------------------------
+
+
+  //htmlファイルが送れることのテスト
+  std::string home_path = getenv("HOME") ? getenv("HOME") : "";
+  std::cout  << "home_path: " << home_path << std::endl;
+  std::string file_path = home_path + "/Desktop/webserve/html/index.html";
+  std::cout << "file_path: " << file_path << std::endl;
+  print_response.send_http_response(get_poll_fds()[i].fd, file_path.c_str());
 }
 
 

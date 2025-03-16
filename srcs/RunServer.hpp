@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "ServerData.hpp"
+#include "PrintResponse.hpp"//一時的に追加。本来正常レスポンスクラスで呼び出し
 
 class RunServer {
  private:
