@@ -1,6 +1,6 @@
 #pragma once
-#include <string>
 #include <map>
+#include <string>
 
 // HTTPリクエストの構造体が含まれる
 class HTTPRequest {
@@ -15,11 +15,12 @@ class HTTPRequest {
 
  public:
   HTTPRequest();
-  HTTPRequest(const std::string& method, const std::string& url, 
-              const std::string& version, 
-              const std::map<std::string, std::string>& headers,
-              const std::string& body,
-              bool keepAlive = false);  // keepAliveパラメータをデフォルト値付きで追加
+  HTTPRequest(
+      const std::string& method, const std::string& url,
+      const std::string& version,
+      const std::map<std::string, std::string>& headers,
+      const std::string& body,
+      bool keepAlive = false);  // keepAliveパラメータをデフォルト値付きで追加
   ~HTTPRequest();
 
   // アクセサメソッド
@@ -27,7 +28,9 @@ class HTTPRequest {
   std::string getURL() const { return _url; }
   std::string getVersion() const { return _version; }
   std::string getBody() const { return _body; }
-  const std::map<std::string, std::string>& getHeaders() const { return _headers; }
+  const std::map<std::string, std::string>& getHeaders() const {
+    return _headers;
+  }
   std::string getHeader(const std::string& key) const;
   bool isValid() const { return _valid; }
   bool isKeepAlive() const { return _keepAlive; }  // keepAliveのゲッターを追加
