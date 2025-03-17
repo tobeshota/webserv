@@ -23,7 +23,7 @@ void HTTPResponse::setHeader(const std::string& key, const std::string& value) {
 
 void HTTPResponse::setBody(const std::string& body) { _body = body; }
 
-//ここにステータスコードとメッセージ、そしてheaderを一つの文字列にして返す関数を作る。ボディはファイルから読み込む
+// ここにステータスコードとメッセージ、そしてheaderを一つの文字列にして返す関数を作る。ボディはファイルから読み込む
 std::string HTTPResponse::connect_str(FILE* file) const {
   // ファイルのサイズを取得
   fseek(file, 0, SEEK_END);

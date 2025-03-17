@@ -2,13 +2,14 @@
 <<<<<<< HEAD
 #include <map>
 #include <string>
-    =======
+    == == ==
+    =
 #include <map>
 #include <string>
-    >>>>>>> 5fdd9d0 (runserver改造中。動く。)
+        >>>>>>> 5fdd9d0(runserver改造中。動く。)
 
-    // HTTPリクエストの構造体が含まれる
-    class HTTPRequest {
+        // HTTPリクエストの構造体が含まれる
+        class HTTPRequest {
  private:
   std::string _method;
 <<<<<<< HEAD

@@ -61,13 +61,13 @@ void RunServer::handle_client_data(size_t i, RunServer &run_server) {
 
   buffer[bytes_read] = '\0';
 
-  //メソッドを実行
-  // exec_method(http request parser)
-  // create_response_data(run_server, i)
-  //正常のレスポンスを返す
-  // http handle successから、レスポンスを取得
-  // printclassで、レスポンスを送信
-  // send_response(http response parser)
+  // メソッドを実行
+  //  exec_method(http request parser)
+  //  create_response_data(run_server, i)
+  // 正常のレスポンスを返す
+  //  http handle successから、レスポンスを取得
+  //  printclassで、レスポンスを送信
+  //  send_response(http response parser)
 
   // htmlファイルが送れることのテスト
   std::string home_path = getenv("HOME") ? getenv("HOME") : "";

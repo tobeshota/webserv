@@ -25,14 +25,14 @@ void PrintResponse::send_header(int client_socket, FILE *file,
   }
 }
 
-//第３引数にメソッドの値を格納するクラスを作る。もしくはメソッドをテンプレート化する
+// 第３引数にメソッドの値を格納するクラスを作る。もしくはメソッドをテンプレート化する
 void PrintResponse::send_http_response(int client_socket, const char *filename,
                                        HTTPResponse response) {
   std::cout << "send_http_response" << std::endl;
   FILE *file = fopen(filename, "r");
   if (!file) {
     // ファイルが開けなかった場合、404エラーを返す
-    //本来ならエラーハンドルから渡されるものを使う
+    // 本来ならエラーハンドルから渡されるものを使う
     const char *not_found_response =
         "HTTP/1.1 404 Not Found\r\n"
         "Content-Type: text/html\r\n"
