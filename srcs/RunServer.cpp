@@ -1,6 +1,6 @@
 #include "RunServer.hpp"
 
-#include "HTTPHandleSuccess.hpp"
+// #include "HTTPHandleSuccess.hpp"
 
 RunServer::RunServer() {}
 
@@ -43,39 +43,35 @@ void RunServer::handle_new_connection(int server_fd) {
 }
 
 // クライアントからのデータを処理する関数
-void RunServer::handle_client_data(size_t i, RunServer &run_server) {
-  PrintResponse print_response;
+void RunServer::handle_client_data(size_t client_fd) {
+  PrintResponse print_response(get_poll_fds()[client_fd].fd);
+  // HTTPHandleSuccess success_response;
   HTTPResponse response;
+
   char buffer[4096];
   ssize_t bytes_read =
-      recv(get_poll_fds()[i].fd, buffer, sizeof(buffer) - 1, 0);
+      recv(get_poll_fds()[client_fd].fd, buffer, sizeof(buffer) - 1, 0);
 
   if (bytes_read <= 0) {
     if (bytes_read == -1) {
       perror("read");
     }
-    close(get_poll_fds()[i].fd);
-    get_poll_fds().erase(get_poll_fds().begin() + i);
+    close(get_poll_fds()[client_fd].fd);
+    get_poll_fds().erase(get_poll_fds().begin() + client_fd);
     return;
   }
 
   buffer[bytes_read] = '\0';
+
 
   // メソッドを実行
   //  exec_method(http request parser)
   //  create_response_data(run_server, i)
   // 正常のレスポンスを返す
   //  http handle successから、レスポンスを取得
+  //  HTTPHandleSuccess::ceateResponseData()
   //  printclassで、レスポンスを送信
-  //  send_response(http response parser)
-
-  // htmlファイルが送れることのテスト
-  std::string home_path = getenv("HOME") ? getenv("HOME") : "";
-  std::cout << "home_path: " << home_path << std::endl;
-  std::string file_path = home_path + "/Desktop/webserve/html/index.html";
-  std::cout << "file_path: " << file_path << std::endl;
-  print_response.send_http_response(get_poll_fds()[i].fd, file_path.c_str(),
-                                    response);
+   print_response.handleRequest(response);
 }
 
 // pollにより、イベント発生してからforをするので、busy-waitではない
@@ -93,7 +89,7 @@ void RunServer::process_poll_events(ServerData &server_data) {
       } else {
         // クライアントから送信されたデータを処理
         // 該当するクライアントのデータを処理
-        handle_client_data(i, *this);
+        handle_client_data(i);
       }
     }
   }

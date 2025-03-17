@@ -1,58 +1,60 @@
 #include "PrintResponse.hpp"
 
-#include "HTTPHandleSuccess.hpp"
+// #include "HTTPHandleSuccess.hpp"
 
-PrintResponse::PrintResponse() {}
+PrintResponse::PrintResponse(int client_socket) {
+  this->client_socket = client_socket;
+}
 
 PrintResponse::~PrintResponse() {}
 
-void PrintResponse::send_header(int client_socket, FILE *file,
-                                HTTPResponse response) {
-  // ヘッダーを作成
-  std::string header_str = response.connect_str(file);
-  const char *header = header_str.c_str();
-
-  // ヘッダー長を取得
-  size_t header_len = header_str.length();
-
-  // ヘッダーを送信（エラーチェック付き）
-  ssize_t bytes_sent = send(client_socket, header, header_len, MSG_NOSIGNAL);
-  if (bytes_sent == -1) {
-    throw std::runtime_error("Failed to send header");
+//printresponseはすでにstatuscode, header, bodyを持っているので、それを使ってレスポンスを作成する
+void PrintResponse::handleRequest(HTTPResponse &httpResponse) {
+  // ステータスラインを送信
+  // std::string status_line = "HTTP/1.1 " + std::to_string(httpResponse.getHttpStatusCode()) + " " + httpResponse.getHttpStatusLine() + "\r\n";
+  // if (send(client_socket, status_line.c_str(), status_line.size(), MSG_NOSIGNAL) < 0) {
+  if (send(client_socket, httpResponse.getHttpStatusLine().c_str(), httpResponse.getHttpStatusLine().size(), MSG_NOSIGNAL) < 0) {
+    throw std::runtime_error("Failed to send status line");
   }
-  if (static_cast<size_t>(bytes_sent) != header_len) {
-    throw std::runtime_error("Incomplete header send");
+
+  // レスポンスヘッダを送信
+  std::string response_header = httpResponse.getHttpResponseHeader();
+  if (send(client_socket, response_header.c_str(), response_header.size(), MSG_NOSIGNAL) < 0) {
+    throw std::runtime_error("Failed to send response header");
+  }
+
+ // レスポンスボディ送信
+  std::string body_path = httpResponse.getHttpResponseBody();
+  if (!body_path.empty()) {
+    int fd = open(body_path.c_str(), O_RDONLY);
+    if (fd < 0) {
+      throw std::runtime_error("Failed to open response body file");
+    }
+    
+    std::vector<std::string> chunks = asshuku(fd);
+for (std::vector<std::string>::const_iterator it = chunks.begin(); it != chunks.end(); ++it) {
+    if (send(client_socket, it->c_str(), it->size(), MSG_NOSIGNAL) < 0) {
+        close(fd);
+        throw std::runtime_error("Failed to send response body");
+    }
+}
+    close(fd);
   }
 }
 
-// 第３引数にメソッドの値を格納するクラスを作る。もしくはメソッドをテンプレート化する
-void PrintResponse::send_http_response(int client_socket, const char *filename,
-                                       HTTPResponse response) {
-  std::cout << "send_http_response" << std::endl;
-  FILE *file = fopen(filename, "r");
-  if (!file) {
-    // ファイルが開けなかった場合、404エラーを返す
-    // 本来ならエラーハンドルから渡されるものを使う
-    const char *not_found_response =
-        "HTTP/1.1 404 Not Found\r\n"
-        "Content-Type: text/html\r\n"
-        "Content-Length: 46\r\n"
-        "Connection: close\r\n"
-        "\r\n"
-        "<html><body><h1>404 Not Found</h1></body></html>";
+std::vector<std::string> PrintResponse::asshuku(int fd) {
+  std::vector<std::string> result;
+  const size_t chunk_size = 1024;
+  char buffer[chunk_size];
+  ssize_t bytes_read;
 
-    send(client_socket, not_found_response, strlen(not_found_response),
-         MSG_NOSIGNAL);
-    return;
-  }
-  send_header(client_socket, file, response);
-
-  // ファイルの内容（ボディ）を送信
-  char buffer[BUFFER_SIZE];
-  size_t bytes_read;
-  while ((bytes_read = fread(buffer, 1, sizeof(buffer), file)) > 0) {
-    send(client_socket, buffer, bytes_read, MSG_NOSIGNAL);
+  while ((bytes_read = read(fd, buffer, chunk_size)) > 0) {
+    result.push_back(std::string(buffer, bytes_read));
   }
 
-  fclose(file);
+  if (bytes_read < 0) {
+    throw std::runtime_error("Failed to read file");
+  }
+
+  return result;
 }

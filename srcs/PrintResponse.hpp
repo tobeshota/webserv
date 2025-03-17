@@ -1,22 +1,31 @@
 #pragma once
 
-// #include "HandleSuccess.hpp"
+#ifndef PRINTRESPONSE_HPP
+#define PRINTRESPONSE_HPP
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <iostream>
+#include <fstream>
+#include <fcntl.h>
+#include "Handler.hpp"
+#include "HTTPResponse.hpp"
+#include <stdexcept>
 
 #include <iostream>
 #define BUFFER_SIZE 1024
 
-class PrintResponse {
+class PrintResponse :public Handler {
  private:
+  int client_socket;
  public:
-  PrintResponse();
+  PrintResponse(int client_socket);
   ~PrintResponse();
-  void send_http_response(int client_socket, const char *filename,
-                          HTTPResponse response);
-  void send_header(int client_socket, FILE *file, HTTPResponse response);
+  void handleRequest(HTTPResponse& httpResponse);
+  static std::vector<std::string> asshuku(int fd);
 };
+
+#endif
