@@ -31,6 +31,6 @@ class HTTPResponse {
     _httpResponseBody = httpResponseBody;
   }
 
-  HTTPResponse(/* args */);
-  ~HTTPResponse();
+  HTTPResponse() { ; }
+  ~HTTPResponse() { ; }
 };
