@@ -2,13 +2,13 @@
 <<<<<<< HEAD
 #include <map>
 #include <string>
-=======
-#include <string>
+    =======
 #include <map>
->>>>>>> 5fdd9d0 (runserver改造中。動く。)
+#include <string>
+    >>>>>>> 5fdd9d0 (runserver改造中。動く。)
 
-// HTTPリクエストの構造体が含まれる
-class HTTPRequest {
+    // HTTPリクエストの構造体が含まれる
+    class HTTPRequest {
  private:
   std::string _method;
 <<<<<<< HEAD
@@ -49,11 +49,13 @@ class HTTPRequest {
  public:
   HTTPRequest();
   ~HTTPRequest();
-  
+
   bool parseRequest(const std::string& raw_request);
   const std::string& getMethod() const { return _method; }
   const std::string& getPath() const { return _path; }
   const std::string& getVersion() const { return _version; }
-  const std::map<std::string, std::string>& getHeaders() const { return _headers; }
+  const std::map<std::string, std::string>& getHeaders() const {
+    return _headers;
+  }
 >>>>>>> 5fdd9d0 (runserver改造中。動く。)
 };

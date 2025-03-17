@@ -15,4 +15,3 @@ class StatusCodes {
   bool isError(unsigned long code);
   std::string getMessage(unsigned long code);
 };
-

@@ -35,9 +35,11 @@ void RunServer::handle_new_connection(int server_fd) {
   pollfd client_fd_poll;
   client_fd_poll.fd = new_socket;
   client_fd_poll.events = POLLIN;
-  std::cout << "before--handle_new_connection:poll_fds.size() " << get_poll_fds().size() << std::endl;
+  std::cout << "before--handle_new_connection:poll_fds.size() "
+            << get_poll_fds().size() << std::endl;
   get_poll_fds().push_back(client_fd_poll);
-  std::cout << "after--handle_new_connection:poll_fds.size() " << get_poll_fds().size() << std::endl;
+  std::cout << "after--handle_new_connection:poll_fds.size() "
+            << get_poll_fds().size() << std::endl;
 }
 
 // クライアントからのデータを処理する関数
@@ -45,7 +47,8 @@ void RunServer::handle_client_data(size_t i, RunServer &run_server) {
   PrintResponse print_response;
   HTTPResponse response;
   char buffer[4096];
-  ssize_t bytes_read = recv(get_poll_fds()[i].fd, buffer, sizeof(buffer) - 1, 0);
+  ssize_t bytes_read =
+      recv(get_poll_fds()[i].fd, buffer, sizeof(buffer) - 1, 0);
 
   if (bytes_read <= 0) {
     if (bytes_read == -1) {
@@ -58,22 +61,22 @@ void RunServer::handle_client_data(size_t i, RunServer &run_server) {
 
   buffer[bytes_read] = '\0';
 
-//メソッドを実行
-// exec_method(http request parser)
-//create_response_data(run_server, i)
-//正常のレスポンスを返す
-//http handle successから、レスポンスを取得
-//printclassで、レスポンスを送信
-// send_response(http response parser)
+  //メソッドを実行
+  // exec_method(http request parser)
+  // create_response_data(run_server, i)
+  //正常のレスポンスを返す
+  // http handle successから、レスポンスを取得
+  // printclassで、レスポンスを送信
+  // send_response(http response parser)
 
-  //htmlファイルが送れることのテスト
+  // htmlファイルが送れることのテスト
   std::string home_path = getenv("HOME") ? getenv("HOME") : "";
-  std::cout  << "home_path: " << home_path << std::endl;
+  std::cout << "home_path: " << home_path << std::endl;
   std::string file_path = home_path + "/Desktop/webserve/html/index.html";
   std::cout << "file_path: " << file_path << std::endl;
-  print_response.send_http_response(get_poll_fds()[i].fd, file_path.c_str(), response);
+  print_response.send_http_response(get_poll_fds()[i].fd, file_path.c_str(),
+                                    response);
 }
-
 
 // pollにより、イベント発生してからforをするので、busy-waitではない
 //  pollイベントを処理する関数。ポーリングだけど、「イベントが来るまで待機する」ので
