@@ -9,8 +9,8 @@ class Handler {
   Handler* _nextHandler;
 
  public:
- Handler() : _nextHandler(NULL) {};
- ~Handler() { ; }
+  Handler() : _nextHandler(NULL) {};
+  ~Handler() { ; }
   void setNextHandler(Handler* handler) { _nextHandler = handler; }
   virtual void handleRequest(HTTPResponse& httpResponse) = 0;
 };
