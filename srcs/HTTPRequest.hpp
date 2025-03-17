@@ -1,8 +1,8 @@
 #pragma once
 #include <map>
 #include <string>
- // HTTPリクエストの構造体が含まれる
-  class HTTPRequest {
+// HTTPリクエストの構造体が含まれる
+class HTTPRequest {
  private:
   std::string _method;
   std::string _url;
