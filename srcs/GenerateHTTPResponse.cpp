@@ -1,4 +1,4 @@
-#include "HandleError.hpp"
+#include "GenerateHTTPResponse.hpp"
 
 std::string int2str(int nb) {
   std::stringstream ss;
@@ -6,7 +6,7 @@ std::string int2str(int nb) {
   return ss.str();
 }
 
-std::string HandleError::generateHttpStatusLine(const int status_code) {
+std::string GenerateHTTPResponse::generateHttpStatusLine(const int status_code) {
   StatusCodes statusCodes;
 
   std::string httpStatusLine =
@@ -66,7 +66,7 @@ std::string readFile(const std::string& filePath) {
 //   return result.str();
 // }
 
-std::string HandleError::generateHttpResponseHeader(
+std::string GenerateHTTPResponse::generateHttpResponseHeader(
     const std::string& httpResponseBody) {
   std::string httpResponseHeader = "Server: webserv\n";
   // httpResponseHeader += "Date: " + getCurrentTimeInGMTFormat() + "\n";
@@ -79,7 +79,7 @@ std::string HandleError::generateHttpResponseHeader(
 
 // webserv.confのディレクティブerror_page, index指定のファイル
 // error_page 404 /custom_404.html; のように設定できる．
-std::string HandleError::generateHttpResponseBody(const int status_code) {
+std::string GenerateHTTPResponse::generateHttpResponseBody(const int status_code) {
   std::string httpResponseBody, errorPageValue, rootValue;
 
   const Directive* errorPageDirective = _rootDirective.findDirective(
@@ -103,10 +103,10 @@ std::string HandleError::generateHttpResponseBody(const int status_code) {
   return httpResponseBody;
 }
 
-HandleError::HandleError(Directive rootDirective, HTTPRequest httpRequest)
+GenerateHTTPResponse::GenerateHTTPResponse(Directive rootDirective, HTTPRequest httpRequest)
     : _rootDirective(rootDirective), _httpRequest(httpRequest) {}
 
-void HandleError::handleRequest(HTTPResponse& httpResponse) {
+void GenerateHTTPResponse::handleRequest(HTTPResponse& httpResponse) {
   httpResponse.setHttpStatusLine(
       this->generateHttpStatusLine(httpResponse.getHttpStatusCode()));
   httpResponse.setHttpResponseBody(
