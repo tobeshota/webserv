@@ -1,10 +1,7 @@
 #include <cstdlib>
 #include <iostream>
 
-#include "GenerateHTTPResponse.hpp"
 #include "OSInit.hpp"
-#include "ParseConf.hpp"
-#include "ParseHTTPRequest.hpp"
 #include "TOMLParser.hpp"
 
 int webserv(int argc, char** argv) {
