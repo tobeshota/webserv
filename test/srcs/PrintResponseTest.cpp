@@ -110,3 +110,85 @@ TEST_F(PrintResponseTest, AsshukuTest) {
     unlink(test_file);
 }
 
+// 状態ラインの送信失敗テスト
+TEST_F(PrintResponseTest, HandleRequestFailStatusLineTest) {
+    PrintResponse printer(-1);  // 無効なソケット
+    HTTPResponse response;
+    
+    response.setHttpStatusCode(200);
+    response.setHttpStatusLine("HTTP/1.1 200 OK\r\n");
+    
+    EXPECT_THROW({
+        try {
+            printer.handleRequest(response);
+        } catch (const std::runtime_error& e) {
+            EXPECT_STREQ("Failed to send status line", e.what());
+            throw;
+        }
+    }, std::runtime_error);
+}
+
+// // ヘッダーの送信失敗テスト
+// TEST_F(PrintResponseTest, HandleRequestFailHeaderTest) {
+//     PrintResponse printer(mockSocket[0]);
+//     HTTPResponse response;
+    
+//     response.setHttpStatusLine("HTTP/1.1 200 OK\r\n");
+//     response.setHttpResponseHeader("Content-Type: text/plain\r\n\r\n");
+    
+//     // ステータスライン送信後にソケットを閉じる
+//     ASSERT_GT(send(mockSocket[0], response.getHttpStatusLine().c_str(), 
+//                    response.getHttpStatusLine().size(), MSG_NOSIGNAL), 0);
+//     close(mockSocket[0]);
+    
+//     EXPECT_THROW({
+//         try {
+//             printer.handleRequest(response);
+//         } catch (const std::runtime_error& e) {
+//             EXPECT_STREQ("Failed to send response header", e.what());
+//             throw;
+//         }
+//     }, std::runtime_error);
+// }
+
+// ボディの送信失敗テスト
+TEST_F(PrintResponseTest, HandleRequestFailBodyTest) {
+    PrintResponse printer(mockSocket[0]);
+    HTTPResponse response;
+    
+    // 存在しないファイルパスを設定
+    response.setHttpStatusLine("HTTP/1.1 200 OK\r\n");
+    response.setHttpResponseHeader("Content-Type: text/plain\r\n\r\n");
+    response.setHttpResponseBody("/nonexistent/file/path.txt");
+    
+    EXPECT_THROW({
+        try {
+            printer.handleRequest(response);
+        } catch (const std::runtime_error& e) {
+            EXPECT_STREQ("Failed to open response body file", e.what());
+            throw;
+        }
+    }, std::runtime_error);
+}
+
+// ファイル読み込みエラーテスト
+TEST_F(PrintResponseTest, AsshukuReadErrorTest) {
+    const char* test_file = "/tmp/test_read_error.txt";
+    int fd = open(test_file, O_CREAT | O_RDONLY, 0666);
+    ASSERT_GT(fd, 0);
+    
+    // ファイルディスクリプタを閉じて無効にする
+    close(fd);
+    
+    EXPECT_THROW({
+        try {
+            PrintResponse::asshuku(fd);
+        } catch (const std::runtime_error& e) {
+            EXPECT_STREQ("Failed to read file", e.what());
+            throw;
+        }
+    }, std::runtime_error);
+    
+    unlink(test_file);
+}
+
