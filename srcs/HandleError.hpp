@@ -4,7 +4,6 @@
 #include <sstream>  // 文字列のストリーム操作を行うためのヘッダ。std::stringstreamを使って文字列を組み立て、最終的に出力するために使用。
 
 #include "Handler.hpp"
-#include "PrintResponse.hpp"
 #include "StatusCodes.hpp"
 #define DEFAULT_ERROR_PAGE "./html/defaultErrorPage.html"
 
