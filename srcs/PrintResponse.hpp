@@ -15,6 +15,6 @@ private:
 public:
   PrintResponse();
   ~PrintResponse();
-  void send_http_response(int client_socket, const char *filename);
-  void send_header(int client_socket, FILE *file);
+  void send_http_response(int client_socket, const char *filename, HTTPResponse response);
+  void send_header(int client_socket, FILE *file, HTTPResponse response);
 };

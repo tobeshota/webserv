@@ -1,6 +1,6 @@
 #include "RunServer.hpp"
 
-#include "HTTPResponse.hpp"
+#include "HTTPHandleSuccess.hpp"
 
 RunServer::RunServer() {}
 
@@ -41,8 +41,9 @@ void RunServer::handle_new_connection(int server_fd) {
 }
 
 // クライアントからのデータを処理する関数
-void RunServer::handle_client_data(size_t i) {
+void RunServer::handle_client_data(size_t i, RunServer &run_server) {
   PrintResponse print_response;
+  HTTPResponse response;
   char buffer[4096];
   ssize_t bytes_read = recv(get_poll_fds()[i].fd, buffer, sizeof(buffer) - 1, 0);
 
@@ -57,44 +58,20 @@ void RunServer::handle_client_data(size_t i) {
 
   buffer[bytes_read] = '\0';
 
-
-//----------------------------------------------
-//送られたことのテスト。本来は、HTTPリクエストをパースする、メソッドを呼び出す
-  // // HTTPレスポンスを作成
-  // HTTPResponse response;
-  // response.setStatus(200, "OK");
-  // response.setHeader("Content-Type", "text/plain");
-  // response.setBody("Hello from WebServ!");
-
-  // std::string response_str = response.toString();
-  // std::string response_str =
-  //     "HTTP/1.1 200 OK\r\n"
-  //     "Content-Type: text/plain\r\n"
-  //     "Content-Length: 13\r\n"
-  //     "Connection: close\r\n"
-  //     "\r\n"
-  //     "Hello, world!";
-
-  // send()を使用してレスポンスを送信
-  // ssize_t bytes_sent =
-  //     send(get_poll_fds()[i].fd, response_str.c_str(), response_str.length(),
-  //          MSG_NOSIGNAL);  // SIGPIPEを防ぐためのフラグ
-
-  // if (bytes_sent == -1) {
-  //   perror("send");
-  //   close(get_poll_fds()[i].fd);
-  //   get_poll_fds().erase(get_poll_fds().begin() + i);
-  // }
-
-  //-------------------------------------------------------
-
+//メソッドを実行
+// exec_method(http request parser)
+//create_response_data(run_server, i)
+//正常のレスポンスを返す
+//http handle successから、レスポンスを取得
+//printclassで、レスポンスを送信
+// send_response(http response parser)
 
   //htmlファイルが送れることのテスト
   std::string home_path = getenv("HOME") ? getenv("HOME") : "";
   std::cout  << "home_path: " << home_path << std::endl;
   std::string file_path = home_path + "/Desktop/webserve/html/index.html";
   std::cout << "file_path: " << file_path << std::endl;
-  print_response.send_http_response(get_poll_fds()[i].fd, file_path.c_str());
+  print_response.send_http_response(get_poll_fds()[i].fd, file_path.c_str(), response);
 }
 
 
@@ -113,7 +90,7 @@ void RunServer::process_poll_events(ServerData &server_data) {
       } else {
         // クライアントから送信されたデータを処理
         // 該当するクライアントのデータを処理
-        handle_client_data(i);
+        handle_client_data(i, *this);
       }
     }
   }
