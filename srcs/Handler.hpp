@@ -4,17 +4,13 @@
 #include "HTTPRequest.hpp"
 #include "HTTPResponse.hpp"
 
-class Handler : public Directive, HTTPRequest, HTTPResponse {
+class Handler {
  protected:
-  Directive _conf;
-  HTTPResponse _http_response;
-  Handler* nextHandler;
+  Handler* _nextHandler;
 
  public:
-  Handler();
-  virtual ~Handler() {}
-
-  void setNextHandler(Handler* handler) { nextHandler = handler; }
-
-  virtual void handleRequest(const HTTPRequest& request) = 0;
+  Handler() : _nextHandler(NULL){};
+  ~Handler() { ; }
+  void setNextHandler(Handler* handler) { _nextHandler = handler; }
+  virtual void handleRequest(HTTPResponse& httpResponse) = 0;
 };
