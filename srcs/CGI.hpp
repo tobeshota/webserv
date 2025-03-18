@@ -1,12 +1,14 @@
 #pragma once
 
-#include <string>
 #include <sys/types.h>
 #include <unistd.h>
-#include "Handler.hpp"
+
+#include <string>
+
 #include "Directive.hpp"
 #include "HTTPRequest.hpp"
 #include "HTTPResponse.hpp"
+#include "Handler.hpp"
 
 // CGIの応答を保存するファイルのパス
 #define CGI_PAGE "/tmp/.cgi_response.html"
@@ -31,6 +33,9 @@ class CGI : public Handler {
   bool isPythonScript(const std::string& url) const;
   std::string getScriptPath() const;
   void cleanupEnv(char** env) const;
+
+  // ディレクトリインデックスを生成するメソッドを追加
+  std::string generateDirectoryListing(const std::string& dirPath) const;
 
  public:
   CGI(Directive rootDirective, HTTPRequest httpRequest);
