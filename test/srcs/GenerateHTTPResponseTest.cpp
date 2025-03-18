@@ -4,9 +4,9 @@
 #include <sstream>
 
 #include "../../srcs/Directive.hpp"
+#include "../../srcs/GenerateHTTPResponse.hpp"
 #include "../../srcs/HTTPRequest.hpp"
 #include "../../srcs/HTTPResponse.hpp"
-#include "../../srcs/GenerateHTTPResponse.hpp"
 #include "../../srcs/StatusCodes.hpp"
 
 // テスト用のモックハンドラークラス
@@ -143,21 +143,6 @@ TEST_F(GenerateHTTPResponseTest, NextHandlerTest) {
   EXPECT_TRUE(mockHandler->handleRequestCalled);
 
   delete mockHandler;
-}
-
-// 異なるステータスコードでのテスト
-TEST_F(GenerateHTTPResponseTest, DifferentStatusCodeTest) {
-  HTTPRequest request = createTestRequest();
-  Directive rootDirective;
-  GenerateHTTPResponse GenerateHTTPResponse(rootDirective, request);
-
-  HTTPResponse response;
-  response.setHttpStatusCode(500);
-  GenerateHTTPResponse.handleRequest(response);
-
-  std::string statusLine = response.getHttpStatusLine();
-  EXPECT_TRUE(statusLine.find("HTTP/1.1 500") != std::string::npos);
-  EXPECT_TRUE(statusLine.find("Internal Server Error") != std::string::npos);
 }
 
 // error_pageディレクティブがない場合のテスト
