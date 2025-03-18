@@ -144,11 +144,10 @@ std::string GenerateHTTPResponse::getPathForHttpResponseBody(
   return rootValue + requestedURL;
 }
 
-// 「CGIが実行されたかどうか」は「CGI_PAGE指定のファイルが存在するかどうか」でわかる
-static bool CGIResponseExist(const std::string& cgiPath) {
-  struct stat buffer;
-  // ファイルが存在するかどうかを確認
-  return (stat(cgiPath.c_str(), &buffer) == 0);
+// 指定された文字列が任意の文字列で終わるかを調べる関数
+bool endsWith(const std::string& str, const std::string& suffix) {
+  return str.size() >= suffix.size() &&
+         str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
 }
 
 std::string GenerateHTTPResponse::generateHttpResponseBody(
@@ -159,7 +158,7 @@ std::string GenerateHTTPResponse::generateHttpResponseBody(
   std::string httpResponseBody;
 
   // HTTPレスポンスがCGIの実行結果であるか
-  if (CGIResponseExist(CGI_PAGE)) {
+  if (endsWith(_httpRequest.getURL(), ".py") || endsWith(_httpRequest.getURL(), ".sh")) {
     httpResponseBody = readFile(CGI_PAGE);
   } else {
     httpResponseBody = readFile(getPathForHttpResponseBody(status_code));
