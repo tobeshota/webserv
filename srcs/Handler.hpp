@@ -10,7 +10,7 @@ class Handler {
 
  public:
   Handler() : _nextHandler(NULL){};
-  ~Handler() { ; }
+  virtual ~Handler() { ; }
   void setNextHandler(Handler* handler) { _nextHandler = handler; }
   virtual void handleRequest(HTTPResponse& httpResponse) = 0;
 };
