@@ -184,12 +184,13 @@ TEST_F(HTTPRequestParserTest, MissingRequestVersion) {
 }
 
 // TEST_F(HTTPRequestParserTest, InvalidHttpVersion) {
-//   std::string request = "GET /index.html HTTP/2.0\r\nHost: example.com\r\n\r\n";
-//   EXPECT_THROW(parseRequest(request), std::runtime_error);
+//   std::string request = "GET /index.html HTTP/2.0\r\nHost:
+//   example.com\r\n\r\n"; EXPECT_THROW(parseRequest(request),
+//   std::runtime_error);
 // }
 
 TEST_F(HTTPRequestParserTest, MalformedHeaderLine) {
-  std::string request = 
+  std::string request =
       "GET /index.html HTTP/1.1\r\n"
       "InvalidHeader\r\n"
       "Host: example.com\r\n\r\n";
@@ -197,21 +198,21 @@ TEST_F(HTTPRequestParserTest, MalformedHeaderLine) {
 }
 
 TEST_F(HTTPRequestParserTest, HeaderWithEmptyValue) {
-  std::string request = 
+  std::string request =
       "GET /index.html HTTP/1.1\r\n"
       "EmptyHeader: \r\n"
       "Host: example.com\r\n\r\n";
-  
+
   HTTPRequest result = parseRequest(request);
   EXPECT_EQ(result.getHeader("EmptyHeader"), "");
 }
 
 TEST_F(HTTPRequestParserTest, HeaderWithMultipleColons) {
-  std::string request = 
+  std::string request =
       "GET /index.html HTTP/1.1\r\n"
       "Complex-Header: value:with:colons\r\n"
       "Host: example.com\r\n\r\n";
-  
+
   HTTPRequest result = parseRequest(request);
   EXPECT_EQ(result.getHeader("Complex-Header"), "value:with:colons");
 }
@@ -245,7 +246,8 @@ TEST_F(HTTPRequestParserTest, HTTP10Request) {
   EXPECT_EQ(result.getMethod(), "GET");
   EXPECT_EQ(result.getURL(), "/old-page.html");
   EXPECT_EQ(result.getVersion(), "HTTP/1.0");
-  EXPECT_FALSE(result.isKeepAlive());  // HTTP/1.0はデフォルトでkeep-aliveではない
+  EXPECT_FALSE(
+      result.isKeepAlive());  // HTTP/1.0はデフォルトでkeep-aliveではない
 }
 
 // Keep-Aliveヘッダーを持つHTTP/1.0リクエストのテスト
@@ -306,37 +308,45 @@ TEST_F(HTTPRequestParserTest, HTTP11ExplicitClose) {
 // 複数のボディパートを持つリクエストのテスト
 TEST_F(HTTPRequestParserTest, MultipartFormData) {
   std::string boundary = "----WebKitFormBoundaryX3xWAR56B6AIbH5s";
-  std::string body = 
-      "--" + boundary + "\r\n"
-      "Content-Disposition: form-data; name=\"field1\"\r\n\r\n"
-      "value1\r\n"
-      "--" + boundary + "\r\n"
-      "Content-Disposition: form-data; name=\"field2\"\r\n\r\n"
-      "value2\r\n"
-      "--" + boundary + "--\r\n";
-  
+  std::string body = "--" + boundary +
+                     "\r\n"
+                     "Content-Disposition: form-data; name=\"field1\"\r\n\r\n"
+                     "value1\r\n"
+                     "--" +
+                     boundary +
+                     "\r\n"
+                     "Content-Disposition: form-data; name=\"field2\"\r\n\r\n"
+                     "value2\r\n"
+                     "--" +
+                     boundary + "--\r\n";
+
   std::string request =
       "POST /form HTTP/1.1\r\n"
       "Host: example.com\r\n"
-      "Content-Type: multipart/form-data; boundary=" + boundary + "\r\n"
-      "Content-Length: " + std::to_string(body.length()) + "\r\n\r\n" + body;
+      "Content-Type: multipart/form-data; boundary=" +
+      boundary +
+      "\r\n"
+      "Content-Length: " +
+      std::to_string(body.length()) + "\r\n\r\n" + body;
 
   HTTPRequest result = parseRequest(request);
   EXPECT_EQ(result.getMethod(), "POST");
   EXPECT_EQ(result.getURL(), "/form");
-  EXPECT_EQ(result.getHeader("Content-Type"), 
+  EXPECT_EQ(result.getHeader("Content-Type"),
             "multipart/form-data; boundary=" + boundary);
   EXPECT_EQ(result.getBody(), body);
 }
 
 // URLエンコードされたフォームデータのテスト
 TEST_F(HTTPRequestParserTest, UrlEncodedFormData) {
-  std::string body = "field1=value%201&field2=value%202&special=%21%40%23%24%25";
+  std::string body =
+      "field1=value%201&field2=value%202&special=%21%40%23%24%25";
   std::string request =
       "POST /form HTTP/1.1\r\n"
       "Host: example.com\r\n"
       "Content-Type: application/x-www-form-urlencoded\r\n"
-      "Content-Length: " + std::to_string(body.length()) + "\r\n\r\n" + body;
+      "Content-Length: " +
+      std::to_string(body.length()) + "\r\n\r\n" + body;
 
   HTTPRequest result = parseRequest(request);
   EXPECT_EQ(result.getMethod(), "POST");
@@ -352,7 +362,8 @@ TEST_F(HTTPRequestParserTest, URLWithSpecialCharacters) {
 
   HTTPRequest result = parseRequest(request);
   EXPECT_EQ(result.getMethod(), "GET");
-  EXPECT_EQ(result.getURL(), "/path/with/special/%20%21%40%23%24%25%5E%26%2A%28%29");
+  EXPECT_EQ(result.getURL(),
+            "/path/with/special/%20%21%40%23%24%25%5E%26%2A%28%29");
 }
 
 // 非常に長いヘッダーのテスト
@@ -361,7 +372,8 @@ TEST_F(HTTPRequestParserTest, VeryLongHeader) {
   std::string request =
       "GET /index.html HTTP/1.1\r\n"
       "Host: example.com\r\n"
-      "X-Long-Header: " + longValue + "\r\n\r\n";
+      "X-Long-Header: " +
+      longValue + "\r\n\r\n";
 
   HTTPRequest result = parseRequest(request);
   EXPECT_EQ(result.getMethod(), "GET");
@@ -410,7 +422,7 @@ TEST_F(HTTPRequestParserTest, CustomHttpMethod) {
 // ホストヘッダーのないHTTP/1.1リクエストのテスト（RFC 7230に基づくとエラー）
 TEST_F(HTTPRequestParserTest, MissingHostHeaderInHttp11) {
   std::string request = "GET /index.html HTTP/1.1\r\n\r\n";
-  
+
   // 現在の実装ではホストヘッダーのチェックを行っていないが、
   // 将来的には実装するかもしれないので、このテストを追加
   HTTPRequest result = parseRequest(request);
