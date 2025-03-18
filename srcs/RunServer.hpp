@@ -7,6 +7,8 @@
 #include <iostream>
 #include <vector>
 
+#include "HTTPResponse.hpp"
+#include "PrintResponse.hpp"
 #include "ServerData.hpp"
 
 class RunServer {

@@ -39,30 +39,39 @@ void RunServer::handle_new_connection(int server_fd) {
 }
 
 // クライアントからのデータを処理する関数
-void RunServer::handle_client_data(size_t i) {
-  std::cout << "Handling client data" << std::endl;
-  char buffer[1024];
-  ssize_t bytes_read = read(get_poll_fds()[i].fd, buffer, sizeof(buffer));
-  if (bytes_read == -1) {
-    perror("read");
-    close(get_poll_fds()[i].fd);
-    get_poll_fds().erase(get_poll_fds().begin() + i);
-    --i;
-  } else if (bytes_read == 0) {
-    std::cout << "Client disconnected" << std::endl;
-    close(get_poll_fds()[i].fd);
-    get_poll_fds().erase(get_poll_fds().begin() + i);
-    --i;
-  } else {
-    buffer[bytes_read] = '\0';
-    std::cout << "Received: " << buffer << std::endl;
-    ssize_t bytes_sent = write(get_poll_fds()[i].fd, buffer, bytes_read);
-    if (bytes_sent == -1) {
-      perror("write");
-      close(get_poll_fds()[i].fd);
-      get_poll_fds().erase(get_poll_fds().begin() + i);
-      --i;
+void RunServer::handle_client_data(size_t client_fd) {
+  char buffer[4096];
+  ssize_t bytes_read =
+      recv(get_poll_fds()[client_fd].fd, buffer, sizeof(buffer) - 1, 0);
+
+  // クライアント切断またはエラーの処理
+  if (bytes_read <= 0) {
+    if (bytes_read == -1) {
+      perror("recv");
     }
+    close(get_poll_fds()[client_fd].fd);
+    get_poll_fds().erase(get_poll_fds().begin() + client_fd);
+    return;
+  }
+
+  buffer[bytes_read] = '\0';
+  std::cout << "Handling client data" << std::endl;
+  std::cout << "Received: " << buffer << std::endl;
+
+  try {
+    PrintResponse print_response(get_poll_fds()[client_fd].fd);
+    HTTPResponse response;
+    // HTTPRequest request(buffer);
+
+    // エコーバック（テスト用）
+    send(get_poll_fds()[client_fd].fd, buffer, bytes_read, MSG_NOSIGNAL);
+
+    // 実際のレスポンス処理
+    print_response.handleRequest(response);
+  } catch (const std::exception &e) {
+    std::cerr << "Error handling client data: " << e.what() << std::endl;
+    close(get_poll_fds()[client_fd].fd);
+    get_poll_fds().erase(get_poll_fds().begin() + client_fd);
   }
 }
 
