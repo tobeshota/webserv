@@ -358,3 +358,219 @@ TEST_F(GenerateHTTPResponseTest, AbsolutePathErrorPageTest) {
   // テスト後にファイル削除
   std::remove(absolutePath.c_str());
 }
+
+// GenerateHTTPResponse::getPathForHttpResponseBodyの単体テスト
+class GetPathForHTTPResponseBodyTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    // テスト用のディレクトリと必要なファイルを作成
+    system("mkdir -p ./test_root/dir/");
+    createTestFile("./test_root/dir/index.html", "<html>Index Page</html>");
+    createTestFile("./test_root/custom_error.html",
+                   "<html>Custom Error</html>");
+    createTestFile("./test_root/file.html", "<html>Regular File</html>");
+  }
+
+  void TearDown() override {
+    // テスト用のファイルとディレクトリを削除
+    system("rm -rf ./test_root");
+  }
+
+  // publicメソッドを通して間接的にgetPathForHttpResponseBodyをテストする
+  std::string testPathForHttpResponseBody(Directive& rootDirective,
+                                          HTTPRequest& request,
+                                          int statusCode) {
+    // GenerateHTTPResponseとHTTPResponseのインスタンスを作成
+    GenerateHTTPResponse generator(rootDirective, request);
+    HTTPResponse response;
+
+    // ステータスコードを設定
+    response.setHttpStatusCode(statusCode);
+
+    // handleRequestを呼び出す前のbodyを退避
+    std::string originalBody = "<!-- original body -->";
+    response.setHttpResponseBody(originalBody);
+
+    // handleRequestを呼び出す
+    generator.handleRequest(response);
+
+    // レスポンスボディを取得
+    std::string resultBody = response.getHttpResponseBody();
+
+    // ファイルパスを抽出するためにファイルの内容を読み込む
+    // 実際のテストでは、生成されるレスポンスボディの中身をチェックする
+    return resultBody;
+  }
+};
+
+// エラーステータスコード(404)とカスタムエラーページが設定されている場合
+TEST_F(GetPathForHTTPResponseBodyTest, ErrorStatusWithCustomErrorPage) {
+  // 設定を作成
+  Directive rootDirective("root");
+  Directive hostDirective("example.com");
+  hostDirective.addKeyValue("root", "./test_root");
+  Directive errorPageDirective("error_page");
+  errorPageDirective.addKeyValue("404", "/custom_error.html");
+  hostDirective.addChild(errorPageDirective);
+  rootDirective.addChild(hostDirective);
+
+  // リクエスト作成
+  std::map<std::string, std::string> headers;
+  headers["Host"] = "example.com";
+  HTTPRequest request("GET", "/some/path", "HTTP/1.1", headers, "");
+
+  // メソッド呼び出し
+  std::string body = testPathForHttpResponseBody(rootDirective, request, 404);
+
+  // 期待される結果: カスタムエラーページの内容
+  EXPECT_EQ(body, "<html>Custom Error</html>");
+}
+
+// エラーステータスコード(404)だがカスタムエラーページが設定されていない場合
+TEST_F(GetPathForHTTPResponseBodyTest, ErrorStatusWithoutCustomErrorPage) {
+  // 設定を作成
+  Directive rootDirective("root");
+  Directive hostDirective("example.com");
+  hostDirective.addKeyValue("root", "./test_root");
+  rootDirective.addChild(hostDirective);
+
+  // リクエスト作成
+  std::map<std::string, std::string> headers;
+  headers["Host"] = "example.com";
+  HTTPRequest request("GET", "/some/path", "HTTP/1.1", headers, "");
+
+  // メソッド呼び出し
+  std::string body = testPathForHttpResponseBody(rootDirective, request, 404);
+
+  // 期待される結果: デフォルトのエラーページの内容
+  // デフォルトのエラーページの内容を読み込む
+  std::ifstream file(DEFAULT_ERROR_PAGE);
+  std::stringstream buffer;
+  buffer << file.rdbuf();
+  file.close();
+  std::string defaultErrorPage = buffer.str();
+
+  EXPECT_EQ(body, defaultErrorPage);
+}
+
+// 成功ステータスコード(200)でURLがディレクトリの場合
+TEST_F(GetPathForHTTPResponseBodyTest, SuccessStatusWithDirectoryURL) {
+  // 設定を作成
+  Directive rootDirective("root");
+  Directive hostDirective("example.com");
+  hostDirective.addKeyValue("root", "./test_root");
+  rootDirective.addChild(hostDirective);
+
+  // リクエスト作成 (URLの末尾にスラッシュがある = ディレクトリ)
+  std::map<std::string, std::string> headers;
+  headers["Host"] = "example.com";
+  HTTPRequest request("GET", "/dir/", "HTTP/1.1", headers, "");
+
+  // メソッド呼び出し
+  std::string body = testPathForHttpResponseBody(rootDirective, request, 200);
+
+  // 期待される結果: ディレクトリのインデックスファイルの内容
+  EXPECT_EQ(body, "<html>Index Page</html>");
+}
+
+// 成功ステータスコード(200)でURLがファイルの場合
+TEST_F(GetPathForHTTPResponseBodyTest, SuccessStatusWithFileURL) {
+  // 設定を作成
+  Directive rootDirective("root");
+  Directive hostDirective("example.com");
+  hostDirective.addKeyValue("root", "./test_root");
+  rootDirective.addChild(hostDirective);
+
+  // リクエスト作成
+  std::map<std::string, std::string> headers;
+  headers["Host"] = "example.com";
+  HTTPRequest request("GET", "/file.html", "HTTP/1.1", headers, "");
+
+  // メソッド呼び出し
+  std::string body = testPathForHttpResponseBody(rootDirective, request, 200);
+
+  // 期待される結果: ファイルの内容
+  EXPECT_EQ(body, "<html>Regular File</html>");
+}
+
+// ホストディレクティブが見つからない場合
+TEST_F(GetPathForHTTPResponseBodyTest, HostDirectiveNotFound) {
+  // 設定を作成 (異なるホスト名)
+  Directive rootDirective("root");
+  Directive hostDirective("other.com");
+  hostDirective.addKeyValue("root", "./test_root");
+  rootDirective.addChild(hostDirective);
+
+  // リクエスト作成
+  std::map<std::string, std::string> headers;
+  headers["Host"] = "example.com";  // 設定には存在しないホスト
+  HTTPRequest request("GET", "/file.html", "HTTP/1.1", headers, "");
+
+  // メソッド呼び出し (エラーステータスコード)
+  std::string body = testPathForHttpResponseBody(rootDirective, request, 404);
+
+  // 期待される結果: デフォルトのエラーページの内容
+  std::ifstream file(DEFAULT_ERROR_PAGE);
+  std::stringstream buffer;
+  buffer << file.rdbuf();
+  file.close();
+  std::string defaultErrorPage = buffer.str();
+
+  EXPECT_EQ(body, defaultErrorPage);
+}
+
+// rootの値がない場合
+TEST_F(GetPathForHTTPResponseBodyTest, NoRootValue) {
+  // 設定を作成 (rootキーなし)
+  Directive rootDirective("root");
+  Directive hostDirective("example.com");
+  // rootは設定しない
+  rootDirective.addChild(hostDirective);
+
+  // リクエスト作成
+  std::map<std::string, std::string> headers;
+  headers["Host"] = "example.com";
+  HTTPRequest request("GET", "/file.html", "HTTP/1.1", headers, "");
+
+  // メソッド呼び出し (成功ステータスコード)
+  std::string body = testPathForHttpResponseBody(rootDirective, request, 200);
+
+  // ファイルが見つからないはずなので、デフォルトのエラーページになるはず
+  std::ifstream file(DEFAULT_ERROR_PAGE);
+  std::stringstream buffer;
+  buffer << file.rdbuf();
+  file.close();
+  std::string defaultErrorPage = buffer.str();
+
+  EXPECT_EQ(body, defaultErrorPage);
+}
+
+// 別のエラーステータスコードが設定されている場合(500のみ設定されていて、404を要求)
+TEST_F(GetPathForHTTPResponseBodyTest, DifferentErrorStatusCode) {
+  // 設定を作成
+  Directive rootDirective("root");
+  Directive hostDirective("example.com");
+  hostDirective.addKeyValue("root", "./test_root");
+  Directive errorPageDirective("error_page");
+  errorPageDirective.addKeyValue(
+      "500", "/custom_error.html");  // 500は設定されているが404はない
+  hostDirective.addChild(errorPageDirective);
+  rootDirective.addChild(hostDirective);
+
+  // リクエスト作成
+  std::map<std::string, std::string> headers;
+  headers["Host"] = "example.com";
+  HTTPRequest request("GET", "/some/path", "HTTP/1.1", headers, "");
+
+  // メソッド呼び出し
+  std::string body = testPathForHttpResponseBody(rootDirective, request, 404);
+
+  // 期待される結果: デフォルトのエラーページの内容
+  std::ifstream file(DEFAULT_ERROR_PAGE);
+  std::stringstream buffer;
+  buffer << file.rdbuf();
+  file.close();
+  std::string defaultErrorPage = buffer.str();
+
+  EXPECT_EQ(body, defaultErrorPage);
+}
