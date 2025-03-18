@@ -145,14 +145,14 @@ std::string GenerateHTTPResponse::getPathForHttpResponseBody(
 }
 
 std::string GenerateHTTPResponse::generateHttpResponseBody(
-    const int status_code) {
+    const int status_code, bool& pageFound) {
   std::string httpResponseBody;
 
   httpResponseBody = readFile(getPathForHttpResponseBody(status_code));
   if (httpResponseBody.empty()) {
     httpResponseBody = readFile(DEFAULT_ERROR_PAGE);
+    pageFound = false;
   }
-
   return httpResponseBody;
 }
 
@@ -161,10 +161,15 @@ GenerateHTTPResponse::GenerateHTTPResponse(Directive rootDirective,
     : _rootDirective(rootDirective), _httpRequest(httpRequest) {}
 
 void GenerateHTTPResponse::handleRequest(HTTPResponse& httpResponse) {
+  bool pageFound = true;
+
+  httpResponse.setHttpResponseBody(this->generateHttpResponseBody(
+      httpResponse.getHttpStatusCode(), pageFound));
+  if (pageFound == false) {
+    httpResponse.setHttpStatusCode(404);
+  }
   httpResponse.setHttpStatusLine(
       this->generateHttpStatusLine(httpResponse.getHttpStatusCode()));
-  httpResponse.setHttpResponseBody(
-      this->generateHttpResponseBody(httpResponse.getHttpStatusCode()));
   httpResponse.setHttpResponseHeader(
       this->generateHttpResponseHeader(httpResponse.getHttpResponseBody()));
 
