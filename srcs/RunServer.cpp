@@ -1,7 +1,5 @@
 #include "RunServer.hpp"
 
-// #include "HTTPHandleSuccess.hpp"
-
 RunServer::RunServer() {}
 
 RunServer::~RunServer() {}
@@ -12,9 +10,7 @@ std::vector<pollfd> &RunServer::get_poll_fds() { return poll_fds; }
 void RunServer::run(ServerData &server_data) {
   while (true) {
     // pollシステムコールを呼び出し、イベントを待つ
-    int poll_count = poll(poll_fds.data(), poll_fds.size(), -1);
-    // デバッグ用にpoll_countを出力
-    std::cout << "poll_count" << poll_count << std::endl;
+    poll(poll_fds.data(), poll_fds.size(), -1);
     // pollイベントを処理
     process_poll_events(server_data);
   }
@@ -63,7 +59,6 @@ void RunServer::handle_client_data(size_t client_fd) {
 
   buffer[bytes_read] = '\0';
 
-
   // メソッドを実行
   //  exec_method(http request parser)
   //  create_response_data(run_server, i)
@@ -71,7 +66,7 @@ void RunServer::handle_client_data(size_t client_fd) {
   //  http handle successから、レスポンスを取得
   //  HTTPHandleSuccess::ceateResponseData()
   //  printclassで、レスポンスを送信
-   print_response.handleRequest(response);
+  print_response.handleRequest(response);
 }
 
 // pollにより、イベント発生してからforをするので、busy-waitではない
