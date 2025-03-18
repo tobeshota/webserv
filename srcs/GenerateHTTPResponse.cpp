@@ -158,7 +158,8 @@ std::string GenerateHTTPResponse::generateHttpResponseBody(
   std::string httpResponseBody;
 
   // HTTPレスポンスがCGIの実行結果であるか
-  if (endsWith(_httpRequest.getURL(), ".py") || endsWith(_httpRequest.getURL(), ".sh")) {
+  if (endsWith(_httpRequest.getURL(), ".py") ||
+      endsWith(_httpRequest.getURL(), ".sh")) {
     httpResponseBody = readFile(CGI_PAGE);
   } else {
     httpResponseBody = readFile(getPathForHttpResponseBody(status_code));
