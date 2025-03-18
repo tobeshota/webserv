@@ -170,8 +170,3 @@ TEST_F(HTTPRequestParserTest, HeaderContinuationLine) {
   EXPECT_EQ(result.getHeader("User-Agent"),
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
 }
-
-int main(int argc, char** argv) {
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}

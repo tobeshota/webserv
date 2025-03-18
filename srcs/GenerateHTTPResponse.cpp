@@ -1,4 +1,4 @@
-#include "HandleError.hpp"
+#include "GenerateHTTPResponse.hpp"
 
 std::string int2str(int nb) {
   std::stringstream ss;
@@ -6,7 +6,8 @@ std::string int2str(int nb) {
   return ss.str();
 }
 
-std::string HandleError::generateHttpStatusLine(const int status_code) {
+std::string GenerateHTTPResponse::generateHttpStatusLine(
+    const int status_code) {
   StatusCodes statusCodes;
 
   std::string httpStatusLine =
@@ -66,7 +67,7 @@ std::string readFile(const std::string& filePath) {
 //   return result.str();
 // }
 
-std::string HandleError::generateHttpResponseHeader(
+std::string GenerateHTTPResponse::generateHttpResponseHeader(
     const std::string& httpResponseBody) {
   std::string httpResponseHeader = "Server: webserv\n";
   // httpResponseHeader += "Date: " + getCurrentTimeInGMTFormat() + "\n";
@@ -77,40 +78,98 @@ std::string HandleError::generateHttpResponseHeader(
   return httpResponseHeader;
 }
 
-// webserv.confのディレクティブerror_page, index指定のファイル
-// error_page 404 /custom_404.html; のように設定できる．
-std::string HandleError::generateHttpResponseBody(const int status_code) {
-  std::string httpResponseBody, errorPageValue, rootValue;
+bool isDirectory(const std::string& filePath) {
+  // 文字列が空でないかつ最後の文字が '/' であるかを確認
+  if (!filePath.empty() && filePath[filePath.length() - 1] == '/') {
+    return true;
+  }
+  return false;
+}
 
-  const Directive* errorPageDirective = _rootDirective.findDirective(
-      _httpRequest.getHeader("Host"), "error_page");
-  if (errorPageDirective == NULL) return readFile(DEFAULT_ERROR_PAGE);
-  errorPageValue = errorPageDirective->getValue(int2str(status_code));
+std::string GenerateHTTPResponse::getPathForHttpResponseBody(
+    const int status_code) {
+  // エラーステータスコード（2xx以外）の場合
+  if (status_code / 100 != 2) {
+    std::string errorPageValue, rootValue;
 
+    // ステータスコードに対応するerror_pageディレクティブを探す
+    const Directive* errorPageDirective = _rootDirective.findDirective(
+        _httpRequest.getHeader("Host"), "error_page");
+    if (errorPageDirective != NULL) {
+      errorPageValue = errorPageDirective->getValue(int2str(status_code));
+    }
+
+    // ホストディレクティブからrootの値を取得
+    const Directive* hostDirective =
+        _rootDirective.findDirective(_httpRequest.getHeader("Host"));
+    if (hostDirective != NULL) {
+      rootValue = hostDirective->getValue("root");
+    }
+
+    // カスタムエラーページが設定されていればそのパスを返す
+    if (!errorPageValue.empty()) {
+      return rootValue + errorPageValue;
+    }
+    // 設定がなければデフォルトのエラーページを返す
+    return DEFAULT_ERROR_PAGE;
+  }
+
+  // 成功ステータス（2xx）の場合
+  std::string requestedURL = _httpRequest.getURL();
+  std::string rootValue;
+
+  // ホストディレクティブからrootの値を取得
   const Directive* hostDirective =
       _rootDirective.findDirective(_httpRequest.getHeader("Host"));
   if (hostDirective != NULL) {
     rootValue = hostDirective->getValue("root");
   }
 
-  const std::string& errorPagePath = rootValue + errorPageValue;
-
-  httpResponseBody = readFile(errorPagePath);
-  if (httpResponseBody.empty()) {
-    httpResponseBody = readFile(DEFAULT_ERROR_PAGE);
+  // URLがディレクトリの場合
+  if (isDirectory(requestedURL)) {
+    // インデックスファイルを探す
+    const Directive* indexDirective = _rootDirective.findDirective(
+        _httpRequest.getHeader("Host"), "location", requestedURL);
+    if (indexDirective != NULL) {
+      std::string indexValue = indexDirective->getValue("index");
+      if (!indexValue.empty()) {
+        return rootValue + requestedURL + indexValue;
+      }
+    }
+    // インデックスディレクティブがなければデフォルトのindex.htmlを使用
+    return rootValue + requestedURL + "index.html";
   }
 
+  // リクエストされたリソースのフルパスを返す
+  return rootValue + requestedURL;
+}
+
+std::string GenerateHTTPResponse::generateHttpResponseBody(
+    const int status_code, bool& pageFound) {
+  std::string httpResponseBody;
+
+  httpResponseBody = readFile(getPathForHttpResponseBody(status_code));
+  if (httpResponseBody.empty()) {
+    httpResponseBody = readFile(DEFAULT_ERROR_PAGE);
+    pageFound = false;
+  }
   return httpResponseBody;
 }
 
-HandleError::HandleError(Directive rootDirective, HTTPRequest httpRequest)
+GenerateHTTPResponse::GenerateHTTPResponse(Directive rootDirective,
+                                           HTTPRequest httpRequest)
     : _rootDirective(rootDirective), _httpRequest(httpRequest) {}
 
-void HandleError::handleRequest(HTTPResponse& httpResponse) {
+void GenerateHTTPResponse::handleRequest(HTTPResponse& httpResponse) {
+  bool pageFound = true;
+
+  httpResponse.setHttpResponseBody(this->generateHttpResponseBody(
+      httpResponse.getHttpStatusCode(), pageFound));
+  if (pageFound == false) {
+    httpResponse.setHttpStatusCode(404);
+  }
   httpResponse.setHttpStatusLine(
       this->generateHttpStatusLine(httpResponse.getHttpStatusCode()));
-  httpResponse.setHttpResponseBody(
-      this->generateHttpResponseBody(httpResponse.getHttpStatusCode()));
   httpResponse.setHttpResponseHeader(
       this->generateHttpResponseHeader(httpResponse.getHttpResponseBody()));
 

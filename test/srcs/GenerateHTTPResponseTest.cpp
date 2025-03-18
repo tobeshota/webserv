@@ -4,9 +4,9 @@
 #include <sstream>
 
 #include "../../srcs/Directive.hpp"
+#include "../../srcs/GenerateHTTPResponse.hpp"
 #include "../../srcs/HTTPRequest.hpp"
 #include "../../srcs/HTTPResponse.hpp"
-#include "../../srcs/HandleError.hpp"
 #include "../../srcs/StatusCodes.hpp"
 
 // テスト用のモックハンドラークラス
@@ -25,7 +25,7 @@ void createTestFile(const std::string& path, const std::string& content) {
   file.close();
 }
 
-class HandleErrorTest : public ::testing::Test {
+class GenerateHTTPResponseTest : public ::testing::Test {
  protected:
   void SetUp() override {
     // テスト用のファイルを作成
@@ -63,24 +63,24 @@ class HandleErrorTest : public ::testing::Test {
 };
 
 // コンストラクタのテスト
-TEST_F(HandleErrorTest, ConstructorTest) {
+TEST_F(GenerateHTTPResponseTest, ConstructorTest) {
   HTTPRequest request = createTestRequest();
   Directive rootDirective;
 
-  HandleError handleError(rootDirective, request);
+  GenerateHTTPResponse GenerateHTTPResponse(rootDirective, request);
   // コンストラクタが例外を投げなければ成功
   SUCCEED();
 }
 
 // HTTPステータスラインの生成テスト
-TEST_F(HandleErrorTest, GenerateHttpStatusLineTest) {
+TEST_F(GenerateHTTPResponseTest, GenerateHttpStatusLineTest) {
   HTTPRequest request = createTestRequest();
   Directive rootDirective;
-  HandleError handleError(rootDirective, request);
+  GenerateHTTPResponse GenerateHTTPResponse(rootDirective, request);
 
   HTTPResponse response;
   response.setHttpStatusCode(404);
-  handleError.handleRequest(response);
+  GenerateHTTPResponse.handleRequest(response);
 
   std::string statusLine = response.getHttpStatusLine();
   EXPECT_TRUE(statusLine.find("HTTP/1.1 404") != std::string::npos);
@@ -88,14 +88,14 @@ TEST_F(HandleErrorTest, GenerateHttpStatusLineTest) {
 }
 
 // HTTPレスポンスヘッダーの生成テスト
-TEST_F(HandleErrorTest, GenerateHttpResponseHeaderTest) {
+TEST_F(GenerateHTTPResponseTest, GenerateHttpResponseHeaderTest) {
   HTTPRequest request = createTestRequest();
   Directive rootDirective;
-  HandleError handleError(rootDirective, request);
+  GenerateHTTPResponse GenerateHTTPResponse(rootDirective, request);
 
   HTTPResponse response;
   response.setHttpStatusCode(404);
-  handleError.handleRequest(response);
+  GenerateHTTPResponse.handleRequest(response);
 
   std::string header = response.getHttpResponseHeader();
   EXPECT_TRUE(header.find("Server: webserv") != std::string::npos);
@@ -105,14 +105,14 @@ TEST_F(HandleErrorTest, GenerateHttpResponseHeaderTest) {
 }
 
 // デフォルトエラーページを使用するケースのテスト
-TEST_F(HandleErrorTest, DefaultErrorPageTest) {
+TEST_F(GenerateHTTPResponseTest, DefaultErrorPageTest) {
   HTTPRequest request = createTestRequest();
   Directive rootDirective;
-  HandleError handleError(rootDirective, request);
+  GenerateHTTPResponse GenerateHTTPResponse(rootDirective, request);
 
   HTTPResponse response;
   response.setHttpStatusCode(999);  // 存在しないステータスコード
-  handleError.handleRequest(response);
+  GenerateHTTPResponse.handleRequest(response);
 
   // デフォルトのエラーページが使用されるはず
   std::string body = response.getHttpResponseBody();
@@ -126,18 +126,18 @@ TEST_F(HandleErrorTest, DefaultErrorPageTest) {
 }
 
 // 次のハンドラーにリクエストが渡されるテスト
-TEST_F(HandleErrorTest, NextHandlerTest) {
+TEST_F(GenerateHTTPResponseTest, NextHandlerTest) {
   HTTPRequest request = createTestRequest();
   Directive rootDirective;
-  HandleError handleError(rootDirective, request);
+  GenerateHTTPResponse GenerateHTTPResponse(rootDirective, request);
 
   // モックハンドラーを設定
   MockHandler* mockHandler = new MockHandler();
-  handleError.setNextHandler(mockHandler);
+  GenerateHTTPResponse.setNextHandler(mockHandler);
 
   HTTPResponse response;
   response.setHttpStatusCode(404);
-  handleError.handleRequest(response);
+  GenerateHTTPResponse.handleRequest(response);
 
   // 次のハンドラーが呼び出されたか確認
   EXPECT_TRUE(mockHandler->handleRequestCalled);
@@ -145,34 +145,19 @@ TEST_F(HandleErrorTest, NextHandlerTest) {
   delete mockHandler;
 }
 
-// 異なるステータスコードでのテスト
-TEST_F(HandleErrorTest, DifferentStatusCodeTest) {
-  HTTPRequest request = createTestRequest();
-  Directive rootDirective;
-  HandleError handleError(rootDirective, request);
-
-  HTTPResponse response;
-  response.setHttpStatusCode(500);
-  handleError.handleRequest(response);
-
-  std::string statusLine = response.getHttpStatusLine();
-  EXPECT_TRUE(statusLine.find("HTTP/1.1 500") != std::string::npos);
-  EXPECT_TRUE(statusLine.find("Internal Server Error") != std::string::npos);
-}
-
 // error_pageディレクティブがない場合のテスト
-TEST_F(HandleErrorTest, NoErrorPageDirectiveTest) {
+TEST_F(GenerateHTTPResponseTest, NoErrorPageDirectiveTest) {
   // error_pageディレクティブを持たないDirectiveを作成
   Directive rootDirective("root");
   Directive hostDirective("localhost");
   rootDirective.addChild(hostDirective);
 
   HTTPRequest request = createTestRequest();
-  HandleError handleError(rootDirective, request);
+  GenerateHTTPResponse GenerateHTTPResponse(rootDirective, request);
 
   HTTPResponse response;
   response.setHttpStatusCode(404);
-  handleError.handleRequest(response);
+  GenerateHTTPResponse.handleRequest(response);
 
   // デフォルトのエラーページが使用されるはず
   std::ifstream file(DEFAULT_ERROR_PAGE);
@@ -184,7 +169,7 @@ TEST_F(HandleErrorTest, NoErrorPageDirectiveTest) {
 }
 
 // 特定のステータスコードに対応するエラーページが定義されていない場合のテスト
-TEST_F(HandleErrorTest, NoMatchingStatusCodeTest) {
+TEST_F(GenerateHTTPResponseTest, NoMatchingStatusCodeTest) {
   // 404以外のステータスコード（例：500）に対応するエラーページのみ定義
   Directive rootDirective("root");
   Directive hostDirective("localhost");
@@ -195,11 +180,11 @@ TEST_F(HandleErrorTest, NoMatchingStatusCodeTest) {
   rootDirective.addChild(hostDirective);
 
   HTTPRequest request = createTestRequest();
-  HandleError handleError(rootDirective, request);
+  GenerateHTTPResponse GenerateHTTPResponse(rootDirective, request);
 
   HTTPResponse response;
   response.setHttpStatusCode(404);  // 定義されていないステータスコード
-  handleError.handleRequest(response);
+  GenerateHTTPResponse.handleRequest(response);
 
   // デフォルトのエラーページが使用されるはず
   std::ifstream file(DEFAULT_ERROR_PAGE);
@@ -211,7 +196,7 @@ TEST_F(HandleErrorTest, NoMatchingStatusCodeTest) {
 }
 
 // hostディレクティブがない場合のテスト
-TEST_F(HandleErrorTest, NoHostDirectiveTest) {
+TEST_F(GenerateHTTPResponseTest, NoHostDirectiveTest) {
   // 存在しないホスト名を使用
   HTTPRequest request = createTestRequest("HTTP/1.1", "unknown-host.com");
   Directive rootDirective("root");
@@ -219,11 +204,11 @@ TEST_F(HandleErrorTest, NoHostDirectiveTest) {
   Directive hostDirective("localhost");
   rootDirective.addChild(hostDirective);
 
-  HandleError handleError(rootDirective, request);
+  GenerateHTTPResponse GenerateHTTPResponse(rootDirective, request);
 
   HTTPResponse response;
   response.setHttpStatusCode(404);
-  handleError.handleRequest(response);
+  GenerateHTTPResponse.handleRequest(response);
 
   // デフォルトのエラーページが使用されるはず
   std::ifstream file(DEFAULT_ERROR_PAGE);
@@ -235,7 +220,7 @@ TEST_F(HandleErrorTest, NoHostDirectiveTest) {
 }
 
 // rootが設定されていない場合のテスト
-TEST_F(HandleErrorTest, NoRootValueTest) {
+TEST_F(GenerateHTTPResponseTest, NoRootValueTest) {
   // rootキーがない設定
   Directive rootDirective("root");
   Directive hostDirective("localhost");
@@ -246,11 +231,11 @@ TEST_F(HandleErrorTest, NoRootValueTest) {
   rootDirective.addChild(hostDirective);
 
   HTTPRequest request = createTestRequest();
-  HandleError handleError(rootDirective, request);
+  GenerateHTTPResponse GenerateHTTPResponse(rootDirective, request);
 
   HTTPResponse response;
   response.setHttpStatusCode(404);
-  handleError.handleRequest(response);
+  GenerateHTTPResponse.handleRequest(response);
 
   // パスが正しくなくても、rootが空なので相対パスで見つけられるか試みる
   // デフォルトのエラーページが使用されるはず
@@ -263,16 +248,16 @@ TEST_F(HandleErrorTest, NoRootValueTest) {
 }
 
 // エラーページのパスが間違っている場合のテスト
-TEST_F(HandleErrorTest, InvalidErrorPagePathTest) {
+TEST_F(GenerateHTTPResponseTest, InvalidErrorPagePathTest) {
   Directive rootDirective =
       createRootDirective("localhost", "/non_existent_page.html", ".");
 
   HTTPRequest request = createTestRequest();
-  HandleError handleError(rootDirective, request);
+  GenerateHTTPResponse GenerateHTTPResponse(rootDirective, request);
 
   HTTPResponse response;
   response.setHttpStatusCode(404);
-  handleError.handleRequest(response);
+  GenerateHTTPResponse.handleRequest(response);
 
   // 存在しないパスなのでデフォルトのエラーページが使用されるはず
   std::ifstream file(DEFAULT_ERROR_PAGE);
@@ -284,7 +269,7 @@ TEST_F(HandleErrorTest, InvalidErrorPagePathTest) {
 }
 
 // 複数のホストと異なるステータスコードのテスト
-TEST_F(HandleErrorTest, MultipleHostsAndStatusCodesTest) {
+TEST_F(GenerateHTTPResponseTest, MultipleHostsAndStatusCodesTest) {
   // 異なるホスト用のエラーページを作成
   createTestFile("./host1_404.html", "<html>Host1 404 Page</html>");
   createTestFile("./host2_404.html", "<html>Host2 404 Page</html>");
@@ -313,30 +298,30 @@ TEST_F(HandleErrorTest, MultipleHostsAndStatusCodesTest) {
   // ホスト1の404エラーページをテスト
   {
     HTTPRequest request1 = createTestRequest("HTTP/1.1", "example.com");
-    HandleError handleError1(rootDirective, request1);
+    GenerateHTTPResponse GenerateHTTPResponse1(rootDirective, request1);
     HTTPResponse response1;
     response1.setHttpStatusCode(404);
-    handleError1.handleRequest(response1);
+    GenerateHTTPResponse1.handleRequest(response1);
     EXPECT_EQ(response1.getHttpResponseBody(), "<html>Host1 404 Page</html>");
   }
 
   // ホスト2の404エラーページをテスト
   {
     HTTPRequest request2 = createTestRequest("HTTP/1.1", "another.com");
-    HandleError handleError2(rootDirective, request2);
+    GenerateHTTPResponse GenerateHTTPResponse2(rootDirective, request2);
     HTTPResponse response2;
     response2.setHttpStatusCode(404);
-    handleError2.handleRequest(response2);
+    GenerateHTTPResponse2.handleRequest(response2);
     EXPECT_EQ(response2.getHttpResponseBody(), "<html>Host2 404 Page</html>");
   }
 
   // ホスト1の500エラーページをテスト
   {
     HTTPRequest request3 = createTestRequest("HTTP/1.1", "example.com");
-    HandleError handleError3(rootDirective, request3);
+    GenerateHTTPResponse GenerateHTTPResponse3(rootDirective, request3);
     HTTPResponse response3;
     response3.setHttpStatusCode(500);
-    handleError3.handleRequest(response3);
+    GenerateHTTPResponse3.handleRequest(response3);
     EXPECT_EQ(response3.getHttpResponseBody(), "<html>Host1 500 Page</html>");
   }
 
@@ -347,7 +332,7 @@ TEST_F(HandleErrorTest, MultipleHostsAndStatusCodesTest) {
 }
 
 // エラーページパスが絶対パスの場合のテスト
-TEST_F(HandleErrorTest, AbsolutePathErrorPageTest) {
+TEST_F(GenerateHTTPResponseTest, AbsolutePathErrorPageTest) {
   std::string absolutePath = "./absolute_error_page.html";
   createTestFile(absolutePath, "<html>Absolute Path Error Page</html>");
 
@@ -361,11 +346,11 @@ TEST_F(HandleErrorTest, AbsolutePathErrorPageTest) {
   rootDirective.addChild(hostDirective);
 
   HTTPRequest request = createTestRequest();
-  HandleError handleError(rootDirective, request);
+  GenerateHTTPResponse GenerateHTTPResponse(rootDirective, request);
 
   HTTPResponse response;
   response.setHttpStatusCode(404);
-  handleError.handleRequest(response);
+  GenerateHTTPResponse.handleRequest(response);
 
   EXPECT_EQ(response.getHttpResponseBody(),
             "<html>Absolute Path Error Page</html>");

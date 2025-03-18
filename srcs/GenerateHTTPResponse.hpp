@@ -7,16 +7,18 @@
 #include "StatusCodes.hpp"
 #define DEFAULT_ERROR_PAGE "./html/defaultErrorPage.html"
 
-class HandleError : public Handler {
+class GenerateHTTPResponse : public Handler {
  private:
   Directive _rootDirective;
   HTTPRequest _httpRequest;
   std::string generateHttpStatusLine(const int status_code);
   std::string generateHttpResponseHeader(const std::string& httpResponseBody);
-  std::string generateHttpResponseBody(const int status_code);
+  std::string generateHttpResponseBody(const int status_code, bool& pageFound);
+  // utils
+  std::string getPathForHttpResponseBody(const int status_code);
 
  public:
-  HandleError(Directive rootDirective, HTTPRequest httpRequest);
+  GenerateHTTPResponse(Directive rootDirective, HTTPRequest httpRequest);
 
   void handleRequest(HTTPResponse& httpResponse);
 };
