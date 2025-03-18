@@ -574,3 +574,34 @@ TEST_F(GetPathForHTTPResponseBodyTest, DifferentErrorStatusCode) {
 
   EXPECT_EQ(body, defaultErrorPage);
 }
+
+// DELETEメソッドがコールされた場合，HTTPレスポンスボディを空にしているかテストする
+TEST(GerateHTTPResponseBodyTest, DeleteMethod) {
+  // テスト用のディレクティブを作成
+  Directive rootDirective("root");
+  Directive hostDirective("example.com");
+  hostDirective.addKeyValue("root", "./test_root");
+  rootDirective.addChild(hostDirective);
+
+  // リクエスト作成
+  std::map<std::string, std::string> headers;
+  headers["Host"] = "example.com";
+  HTTPRequest request("DELETE", "/some/path", "HTTP/1.1", headers, "");
+
+  // GenerateHTTPResponseインスタンスを作成
+  GenerateHTTPResponse GenerateHTTPResponse(rootDirective, request);
+
+  // HTTPResponseインスタンスを作成
+  HTTPResponse response;
+  response.setHttpStatusCode(200);
+
+  // handleRequestを呼び出す前のbodyを退避
+  std::string originalBody = "<!-- original body -->";
+  response.setHttpResponseBody(originalBody);
+
+  // handleRequestを呼び出す
+  GenerateHTTPResponse.handleRequest(response);
+
+  // DELETEメソッドの場合，HTTPレスポンスボディは空になる
+  EXPECT_EQ(response.getHttpResponseBody(), "");
+}
