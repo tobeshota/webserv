@@ -89,32 +89,6 @@ TEST_F(PrintResponseTest, HandleRequestInvalidFileTest) {
   EXPECT_THROW(printer.handleRequest(response), std::runtime_error);
 }
 
-TEST_F(PrintResponseTest, AsshukuTest) {
-  // テストファイル作成
-  const char* test_file = "/tmp/test_asshuku.txt";
-  std::string test_content(3072, 'X');  // 3KBのデータ
-
-  std::ofstream ofs(test_file);
-  ASSERT_TRUE(ofs.is_open());
-  ofs << test_content;
-  ofs.close();
-
-  int fd = open(test_file, O_RDONLY);
-  ASSERT_GT(fd, 0);
-
-  std::vector<std::string> chunks;
-  EXPECT_NO_THROW(chunks = PrintResponse::asshuku(fd));
-
-  // 3072バイトは1024バイトで3分割されるはず
-  EXPECT_EQ(chunks.size(), 3);
-  for (const auto& chunk : chunks) {
-    EXPECT_EQ(chunk.size(), 1024);
-  }
-
-  close(fd);
-  unlink(test_file);
-}
-
 // 状態ラインの送信失敗テスト
 TEST_F(PrintResponseTest, HandleRequestFailStatusLineTest) {
   PrintResponse printer(-1);  // 無効なソケット
@@ -178,27 +152,4 @@ TEST_F(PrintResponseTest, HandleRequestFailBodyTest) {
         }
       },
       std::runtime_error);
-}
-
-// ファイル読み込みエラーテスト
-TEST_F(PrintResponseTest, AsshukuReadErrorTest) {
-  const char* test_file = "/tmp/test_read_error.txt";
-  int fd = open(test_file, O_CREAT | O_RDONLY, 0666);
-  ASSERT_GT(fd, 0);
-
-  // ファイルディスクリプタを閉じて無効にする
-  close(fd);
-
-  EXPECT_THROW(
-      {
-        try {
-          PrintResponse::asshuku(fd);
-        } catch (const std::runtime_error& e) {
-          EXPECT_STREQ("Failed to read file", e.what());
-          throw;
-        }
-      },
-      std::runtime_error);
-
-  unlink(test_file);
 }

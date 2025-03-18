@@ -21,16 +21,15 @@ PrintResponse::PrintResponse(int client_socket) {
 
 PrintResponse::~PrintResponse() {}
 
-void mock(HTTPResponse &httpResponse) {
-  httpResponse.setHttpStatusLine("HTTP/1.1 200 OK\r\n");
-  httpResponse.setHttpResponseHeader("Content-Type: text/html\r\n\r\n");
-  httpResponse.setHttpResponseBody(
-      "/Users/yoshimurahiro/Desktop/wevserv_FR47/html/index.html");
-}
+// void mock(HTTPResponse &httpResponse) {
+//   httpResponse.setHttpStatusLine("HTTP/1.1 200 OK\r\n");
+//   httpResponse.setHttpResponseHeader("Content-Type: text/html\r\n\r\n");
+//   httpResponse.setHttpResponseBody(
+//       "/Users/yoshimurahiro/Desktop/wevserv_FR47/html/index.html");
+// }
 
 void PrintResponse::handleRequest(HTTPResponse &httpResponse) {
   // mock(httpResponse);
-  mock(httpResponse);
   // ステータスラインを送信
   if (send(client_socket, httpResponse.getHttpStatusLine().c_str(),
            httpResponse.getHttpStatusLine().size(), MSG_NOSIGNAL) < 0) {
