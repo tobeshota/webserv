@@ -153,6 +153,9 @@ static bool CGIResponseExist(const std::string& cgiPath) {
 
 std::string GenerateHTTPResponse::generateHttpResponseBody(
     const int status_code, bool& pageFound) {
+  // DELETEメソッドがコールされた場合，HTTPレスポンスボディを空にする
+  if (_httpRequest.getMethod() == "DELETE") return "";
+
   std::string httpResponseBody;
 
   // HTTPレスポンスがCGIの実行結果であるか
