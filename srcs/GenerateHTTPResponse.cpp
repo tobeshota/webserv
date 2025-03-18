@@ -6,7 +6,8 @@ std::string int2str(int nb) {
   return ss.str();
 }
 
-std::string GenerateHTTPResponse::generateHttpStatusLine(const int status_code) {
+std::string GenerateHTTPResponse::generateHttpStatusLine(
+    const int status_code) {
   StatusCodes statusCodes;
 
   std::string httpStatusLine =
@@ -77,25 +78,77 @@ std::string GenerateHTTPResponse::generateHttpResponseHeader(
   return httpResponseHeader;
 }
 
-// webserv.confのディレクティブerror_page, index指定のファイル
-// error_page 404 /custom_404.html; のように設定できる．
-std::string GenerateHTTPResponse::generateHttpResponseBody(const int status_code) {
-  std::string httpResponseBody, errorPageValue, rootValue;
+bool isDirectory(const std::string& filePath) {
+  // 文字列が空でないかつ最後の文字が '/' であるかを確認
+  if (!filePath.empty() && filePath[filePath.length() - 1] == '/') {
+    return true;
+  }
+  return false;
+}
 
-  const Directive* errorPageDirective = _rootDirective.findDirective(
-      _httpRequest.getHeader("Host"), "error_page");
-  if (errorPageDirective == NULL) return readFile(DEFAULT_ERROR_PAGE);
-  errorPageValue = errorPageDirective->getValue(int2str(status_code));
+std::string GenerateHTTPResponse::getPathForHttpResponseBody(
+    const int status_code) {
+  // エラーステータスコード（2xx以外）の場合
+  if (status_code / 100 != 2) {
+    std::string errorPageValue, rootValue;
 
+    // ステータスコードに対応するerror_pageディレクティブを探す
+    const Directive* errorPageDirective = _rootDirective.findDirective(
+        _httpRequest.getHeader("Host"), "error_page");
+    if (errorPageDirective != NULL) {
+      errorPageValue = errorPageDirective->getValue(int2str(status_code));
+    }
+
+    // ホストディレクティブからrootの値を取得
+    const Directive* hostDirective =
+        _rootDirective.findDirective(_httpRequest.getHeader("Host"));
+    if (hostDirective != NULL) {
+      rootValue = hostDirective->getValue("root");
+    }
+
+    // カスタムエラーページが設定されていればそのパスを返す
+    if (!errorPageValue.empty()) {
+      return rootValue + errorPageValue;
+    }
+    // 設定がなければデフォルトのエラーページを返す
+    return DEFAULT_ERROR_PAGE;
+  }
+
+  // 成功ステータス（2xx）の場合
+  std::string requestedURL = _httpRequest.getURL();
+  std::string rootValue;
+
+  // ホストディレクティブからrootの値を取得
   const Directive* hostDirective =
       _rootDirective.findDirective(_httpRequest.getHeader("Host"));
   if (hostDirective != NULL) {
     rootValue = hostDirective->getValue("root");
   }
 
-  const std::string& errorPagePath = rootValue + errorPageValue;
+  // URLがディレクトリの場合
+  if (isDirectory(requestedURL)) {
+    // インデックスファイルを探す
+    const Directive* indexDirective = _rootDirective.findDirective(
+        _httpRequest.getHeader("Host"), "location", requestedURL);
+    if (indexDirective != NULL) {
+      std::string indexValue = indexDirective->getValue("index");
+      if (!indexValue.empty()) {
+        return rootValue + requestedURL + indexValue;
+      }
+    }
+    // インデックスディレクティブがなければデフォルトのindex.htmlを使用
+    return rootValue + requestedURL + "index.html";
+  }
 
-  httpResponseBody = readFile(errorPagePath);
+  // リクエストされたリソースのフルパスを返す
+  return rootValue + requestedURL;
+}
+
+std::string GenerateHTTPResponse::generateHttpResponseBody(
+    const int status_code) {
+  std::string httpResponseBody;
+
+  httpResponseBody = readFile(getPathForHttpResponseBody(status_code));
   if (httpResponseBody.empty()) {
     httpResponseBody = readFile(DEFAULT_ERROR_PAGE);
   }
@@ -103,7 +156,8 @@ std::string GenerateHTTPResponse::generateHttpResponseBody(const int status_code
   return httpResponseBody;
 }
 
-GenerateHTTPResponse::GenerateHTTPResponse(Directive rootDirective, HTTPRequest httpRequest)
+GenerateHTTPResponse::GenerateHTTPResponse(Directive rootDirective,
+                                           HTTPRequest httpRequest)
     : _rootDirective(rootDirective), _httpRequest(httpRequest) {}
 
 void GenerateHTTPResponse::handleRequest(HTTPResponse& httpResponse) {
