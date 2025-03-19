@@ -40,7 +40,32 @@ bool POST::directoryExists(const std::string& dirPath) const {
 
 // ファイルまたはディレクトリへの書き込み権限があるか確認する関数
 bool POST::hasWritePermission(const std::string& path) const {
-  // access関数を使用して書き込み権限をチェック
+  struct stat buffer;
+  
+  // ファイルまたはディレクトリが存在するか確認
+  if (stat(path.c_str(), &buffer) != 0) {
+    return false; // 存在しない場合は書き込み不可
+  }
+
+  // ディレクトリの場合は、より厳密にパーミッションビットをチェック
+  if (S_ISDIR(buffer.st_mode)) {
+    // ディレクトリの書き込み権限ビットをチェック
+    mode_t mode = buffer.st_mode;
+    // 実行ユーザーが所有者の場合
+    if (buffer.st_uid == getuid()) {
+      return (mode & S_IWUSR) != 0;
+    }
+    // 実行ユーザーがグループメンバーの場合
+    else if (buffer.st_gid == getgid()) {
+      return (mode & S_IWGRP) != 0;
+    }
+    // その他のユーザーの場合
+    else {
+      return (mode & S_IWOTH) != 0;
+    }
+  }
+  
+  // 実際のアクセス権限をチェック（ファイルの場合）
   return access(path.c_str(), W_OK) == 0;
 }
 
@@ -76,6 +101,9 @@ bool POST::isBodySizeAllowed(const std::string& body) const {
 
 // 指定されたディレクトリにPOSTが許可されているか確認する関数
 bool POST::isPostAllowedForPath(const std::string& path) const {
+  // 未使用パラメータの警告を抑制
+  (void)path;
+  
   // URLからパスを取得
   std::string url = _httpRequest.getURL();
   
@@ -213,15 +241,26 @@ void POST::setHttpStatusCode(HTTPResponse& httpResponse,
   size_t lastSlash = dirPath.find_last_of('/');
   if (lastSlash != std::string::npos) {
     dirPath = dirPath.substr(0, lastSlash);
+  } else {
+    // パスにスラッシュがない場合はエラー
+    httpResponse.setHttpStatusCode(500);  // Internal Server Error
+    return;
   }
 
+  // ディレクトリの存在確認
   if (!directoryExists(dirPath)) {
     httpResponse.setHttpStatusCode(404);  // Not Found
     return;
   }
 
-  // 書き込み権限の確認
+  // ディレクトリの書き込み権限確認 - この確認を厳密に行う
   if (!hasWritePermission(dirPath)) {
+    httpResponse.setHttpStatusCode(403);  // Forbidden
+    return;
+  }
+
+  // ファイルが既に存在する場合は、ファイルの書き込み権限も確認
+  if (fileExists(fullPath) && !hasWritePermission(fullPath)) {
     httpResponse.setHttpStatusCode(403);  // Forbidden
     return;
   }
@@ -232,6 +271,11 @@ void POST::setHttpStatusCode(HTTPResponse& httpResponse,
 
 // POSTリクエストを処理する関数
 bool POST::handlePostRequest(HTTPResponse& httpResponse, const std::string& fullPath) {
+  // すでに403などエラーステータスが設定されている場合は処理をスキップ
+  if (httpResponse.getHttpStatusCode() != 200) {
+    return false;
+  }
+  
   std::string body = _httpRequest.getBody();
   
   // チャンク転送の場合はデコード
@@ -265,7 +309,7 @@ void POST::handleRequest(HTTPResponse& httpResponse) {
   // HTTPステータスコードを設定
   setHttpStatusCode(httpResponse, fullPath);
   
-  // ステータスコードが200ならPOST処理を実行
+  // ステータスコードが200の場合のみPOST処理を実行
   if (httpResponse.getHttpStatusCode() == 200) {
     handlePostRequest(httpResponse, fullPath);
   }
