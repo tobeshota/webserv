@@ -9,6 +9,8 @@
 
 #include "HTTPResponse.hpp"
 #include "PrintResponse.hpp"
+#include "HTTPRequestParser.hpp"
+#include "DeleteClientMethod.hpp"
 #include "ServerData.hpp"
 
 class RunServer {
