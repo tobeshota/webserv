@@ -35,38 +35,6 @@ std::string readFile(const std::string& filePath) {
   return buffer.str();
 }
 
-// DateのHTTPレスポンスヘッダは省略する．必要になったら設定する．
-// #include <ctime>  // 時刻の取得や操作を行うためのヘッダ。time(), gmtime(),
-// struct tmなどの機能を提供。 #include <iomanip>  //
-// 入力/出力のフォーマット設定を行うためのヘッダ。std::setfill('0')やstd::setw(2)など、表示フォーマットを制御するために使用。
-// std::string getCurrentTimeInGMTFormat() {
-//   // 現在の時刻を取得
-//   time_t rawtime;
-//   struct tm* timeinfo;
-//   time(&rawtime);
-//   timeinfo = gmtime(&rawtime);  // GMT(UTC)に変換
-
-//   // 曜日の配列
-//   const char* weekdays[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
-//   // 月の配列
-//   const char* months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun",
-//                           "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
-
-//   // 出力用の文字列ストリーム
-//   std::stringstream result;
-
-//   // 現在時刻を指定の形式でストリームに追加
-//   result << weekdays[timeinfo->tm_wday] << ", " << timeinfo->tm_mday << " "
-//          << months[timeinfo->tm_mon] << " " << (1900 + timeinfo->tm_year) <<
-//          " "
-//          << std::setfill('0') << std::setw(2) << timeinfo->tm_hour << ":"
-//          << std::setfill('0') << std::setw(2) << timeinfo->tm_min << ":"
-//          << std::setfill('0') << std::setw(2) << timeinfo->tm_sec << " GMT";
-
-//   // 結果を返す
-//   return result.str();
-// }
-
 std::string GenerateHTTPResponse::generateHttpResponseHeader(
     const std::string& httpResponseBody) {
   std::string httpResponseHeader = "Server: webserv\n";
@@ -145,9 +113,33 @@ std::string GenerateHTTPResponse::getPathForHttpResponseBody(
 }
 
 // 指定された文字列が任意の文字列で終わるかを調べる関数
-bool endsWith(const std::string& str, const std::string& suffix) {
+static bool endsWith(const std::string& str, const std::string& suffix) {
   return str.size() >= suffix.size() &&
          str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
+}
+
+std::string GenerateHTTPResponse::getDirectiveValue(std::string directiveKey) {
+  std::string directiveValue;
+  // 指定のホスト内の指定のロケーション内で指定ディレクティブdirectiveKeyの値があれば取得する
+  std::string requestedURL = _httpRequest.getURL();
+  if (isDirectory(requestedURL)) {
+    const Directive* locationDirective = _rootDirective.findDirective(
+        _httpRequest.getHeader("Host"), "location", requestedURL);
+    if (locationDirective != NULL) {
+      directiveValue = locationDirective->getValue(directiveKey);
+      if (!directiveValue.empty()) return directiveValue;
+    }
+  }
+
+  // 指定のホスト内で指定ディレクティブdirectiveKeyの値があれば取得する
+  const Directive* hostDirective =
+      _rootDirective.findDirective(_httpRequest.getHeader("Host"));
+  if (hostDirective != NULL) {
+    directiveValue = hostDirective->getValue(directiveKey);
+    if (!directiveValue.empty()) return directiveValue;
+  }
+
+  return "";
 }
 
 std::string GenerateHTTPResponse::generateHttpResponseBody(
@@ -161,6 +153,13 @@ std::string GenerateHTTPResponse::generateHttpResponseBody(
   if (endsWith(_httpRequest.getURL(), ".py") ||
       endsWith(_httpRequest.getURL(), ".sh")) {
     httpResponseBody = readFile(CGI_PAGE);
+  }  // ディレクトリリスニングすべきか
+  else if (status_code == 200 && getDirectiveValue("autoindex") == "on" &&
+           getDirectiveValue("root") != "") {
+    ListenDirectory listenDirectory(getDirectiveValue("root"));
+    HTTPResponse response;
+    listenDirectory.handleRequest(response);
+    httpResponseBody = response.getHttpResponseBody();
   } else {
     httpResponseBody = readFile(getPathForHttpResponseBody(status_code));
   }

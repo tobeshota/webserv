@@ -3,15 +3,11 @@
 #include <fstream>  // ファイル入出力を行うためのヘッダ。std::ifstreamやstd::ofstreamなどのファイル入出力ストリームを提供。
 #include <sstream>  // 文字列のストリーム操作を行うためのヘッダ。std::stringstreamを使って文字列を組み立て、最終的に出力するために使用。
 
+#include "CGI.hpp"
 #include "Handler.hpp"
+#include "ListenDirectory.hpp"
 #include "StatusCodes.hpp"
-// #include "CGI.hpp" //  後に実装される
 #define DEFAULT_ERROR_PAGE "./html/defaultErrorPage.html"
-
-// CGI.hppで定義される．CGI.hppで定義された後，消す．
-#ifndef CGI_PAGE
-#define CGI_PAGE "./html/.cgi_response.html"
-#endif
 
 class GenerateHTTPResponse : public Handler {
  private:
@@ -22,6 +18,7 @@ class GenerateHTTPResponse : public Handler {
   std::string generateHttpResponseBody(const int status_code, bool& pageFound);
   // utils
   std::string getPathForHttpResponseBody(const int status_code);
+  std::string getDirectiveValue(std::string directiveKey);
 
  public:
   GenerateHTTPResponse(Directive rootDirective, HTTPRequest httpRequest);
