@@ -57,8 +57,8 @@ bool isDirectory(const std::string& filePath) {
 
 std::string GenerateHTTPResponse::getPathForHttpResponseBody(
     const int status_code) {
-  // エラーステータスコード（2xx以外）の場合
-  if (status_code / 100 != 2) {
+  // エラーステータスコード（2xxまたは301または302以外）の場合
+  if (status_code / 100 != 2 && status_code != 301 && status_code != 302) {
     std::string errorPageValue, rootValue;
 
     // ステータスコードに対応するerror_pageディレクティブを探す
@@ -106,7 +106,8 @@ std::string GenerateHTTPResponse::getPathForHttpResponseBody(
       }
     }
     // インデックスディレクティブがなければデフォルトのindex.htmlを使用
-    return rootValue + requestedURL + "index.html";
+    std::string defaultIndexFileName = requestedURL.end()[-1] == '/' ? "index.html" : "/index.html";
+    return rootValue + requestedURL + defaultIndexFileName;
   }
 
   // リクエストされたリソースのフルパスを返す
@@ -133,7 +134,6 @@ std::string GenerateHTTPResponse::getDirectiveValue(std::string directiveKey) {
   // 指定のホスト内の指定のロケーション内で指定ディレクティブdirectiveKeyの値があれば取得する
   std::string requestedURL = _httpRequest.getURL();
   if (isDirectory(rootValue + requestedURL)) {
-    std::cout << "Directory: " << rootValue + requestedURL << std::endl;
     const Directive* locationDirective = _rootDirective.findDirective(
         _httpRequest.getHeader("Host"), "location", requestedURL);
     if (locationDirective != NULL) {
@@ -158,16 +158,14 @@ std::string GenerateHTTPResponse::generateHttpResponseBody(
 
   std::string httpResponseBody;
 
+  // URLリダイレクトすべきか
+  if (getDirectiveValue("return") != "") {
+    _httpRequest.setURL(getDirectiveValue("return"));
+  }
   // HTTPレスポンスがCGIの実行結果であるか
   if (endsWith(_httpRequest.getURL(), ".py") ||
       endsWith(_httpRequest.getURL(), ".sh")) {
     httpResponseBody = readFile(CGI_PAGE);
-  }  // HTTPリダイレクトすべきか
-  else if (getDirectiveValue("return") != "" &&
-           getDirectiveValue("root") != "") {
-    std::string redirectURL =
-        getDirectiveValue("root") + "/" + getDirectiveValue("return") + ".html";
-    httpResponseBody = readFile(redirectURL);
   }
   // ディレクトリリスニングすべきか
   else if (status_code == 200 && getDirectiveValue("autoindex") == "on" &&
