@@ -12,6 +12,7 @@ services:
       - ./Makefile:/app/Makefile
       - ./conf:/app/conf
       - ./html:/app/html
+      - ./redirected:/app/redirected
     ports:
       - "8080:80"
       - "8001:8001"
