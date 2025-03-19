@@ -5,6 +5,7 @@
 
 #include "CGI.hpp"
 #include "Handler.hpp"
+#include "ListenDirectory.hpp"
 #include "StatusCodes.hpp"
 #define DEFAULT_ERROR_PAGE "./html/defaultErrorPage.html"
 
