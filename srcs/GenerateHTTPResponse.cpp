@@ -179,23 +179,19 @@ std::string GenerateHTTPResponse::generateHttpResponseBody(
   // DELETEメソッドがコールされた場合，HTTPレスポンスボディを空にする
   if (_httpRequest.getMethod() == "DELETE") return "";
 
-  // autoindexがonの場合，ListenDirectoryクラスに処理を委譡する
-  if (status_code == 200 && getDirectiveValue("autoindex") == "on" &&
-      getDirectiveValue("root") != "") {
-    ListenDirectory listenDirectory(getDirectiveValue("root"));
-    HTTPResponse response;
-    listenDirectory.handleRequest(response);
-    // ディレクトリが開けない場合はpageFoundがfalseになる
-    pageFound = response.getHttpResponseBody().size() > 0;
-    return response.getHttpResponseBody();
-  }
-
   std::string httpResponseBody;
 
   // HTTPレスポンスがCGIの実行結果であるか
   if (endsWith(_httpRequest.getURL(), ".py") ||
       endsWith(_httpRequest.getURL(), ".sh")) {
     httpResponseBody = readFile(CGI_PAGE);
+  } // ディレクトリリスニングすべきか
+  else if (status_code == 200 && getDirectiveValue("autoindex") == "on" &&
+      getDirectiveValue("root") != "") {
+    ListenDirectory listenDirectory(getDirectiveValue("root"));
+    HTTPResponse response;
+    listenDirectory.handleRequest(response);
+    httpResponseBody = response.getHttpResponseBody();
   } else {
     httpResponseBody = readFile(getPathForHttpResponseBody(status_code));
   }
