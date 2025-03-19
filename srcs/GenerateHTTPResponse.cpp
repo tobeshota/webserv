@@ -180,7 +180,7 @@ std::string GenerateHTTPResponse::generateHttpResponseBody(
   if (_httpRequest.getMethod() == "DELETE") return "";
 
   // autoindexがonの場合，ListenDirectoryクラスに処理を委譡する
-  if (getDirectiveValue("autoindex") == "on" &&
+  if (status_code == 200 && getDirectiveValue("autoindex") == "on" &&
       getDirectiveValue("root") != "") {
     ListenDirectory listenDirectory(getDirectiveValue("root"));
     HTTPResponse response;
