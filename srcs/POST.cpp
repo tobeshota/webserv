@@ -40,6 +40,7 @@ bool POST::directoryExists(const std::string& dirPath) const {
 
 // ファイルまたはディレクトリへの書き込み権限があるか確認する関数
 bool POST::hasWritePermission(const std::string& path) const {
+  // access関数を使用して書き込み権限をチェック
   return access(path.c_str(), W_OK) == 0;
 }
 
@@ -78,33 +79,50 @@ bool POST::isPostAllowedForPath(const std::string& path) const {
   // URLからパスを取得
   std::string url = _httpRequest.getURL();
   
-  // ディレクトリの場合は末尾に/を保証
-  std::string locationPath = url;
-  if (!locationPath.empty() && locationPath[locationPath.length() - 1] != '/') {
-    // 親ディレクトリを取得
-    size_t pos = locationPath.find_last_of('/');
-    if (pos != std::string::npos) {
-      locationPath = locationPath.substr(0, pos + 1);
+  // ホストディレクティブを取得
+  const Directive* hostDirective = 
+      _rootDirective.findDirective(_httpRequest.getHeader("Host"));
+  
+  if (hostDirective == NULL) {
+    return true; // ホストディレクティブが見つからなければデフォルトで許可
+  }
+  
+  // 最適なlocationディレクティブを探す
+  std::string bestMatch = "";
+  const Directive* bestLocationDirective = NULL;
+  
+  // ホストディレクティブの子ディレクティブを探索
+  const Directive::DirectiveList& children = hostDirective->children();
+  for (size_t i = 0; i < children.size(); i++) {
+    if (children[i].name() == "location") {
+      // locationディレクティブからパス値を取得
+      std::string locationPath = "";
+      Directive::KVMap::const_iterator it = children[i].keyValues().find("path");
+      if (it != children[i].keyValues().end() && !it->second.empty()) {
+        locationPath = it->second[0];
+      }
+      
+      // URLがlocationPathで始まるかチェック
+      if (url.find(locationPath) == 0) {
+        // より長いマッチを優先 (より具体的なlocation)
+        if (locationPath.length() > bestMatch.length()) {
+          bestMatch = locationPath;
+          bestLocationDirective = &children[i];
+        }
+      }
     }
   }
   
-  // locationディレクティブを探す
-  const Directive* locationDirective = 
-      _rootDirective.findDirective(_httpRequest.getHeader("Host"), "location", locationPath);
-  
-  if (locationDirective != NULL) {
-    // limit_except ディレクティブがあるかチェック
-    std::string allowedMethods = locationDirective->getValue("limit_except");
+  if (bestLocationDirective != NULL) {
+    // limit_except ディレクティブの値を確認
+    std::string allowedMethods = bestLocationDirective->getValue("limit_except");
     if (!allowedMethods.empty()) {
       // POSTメソッドが許可されているか確認
       return allowedMethods.find("POST") != std::string::npos;
-    } else {
-      // limit_exceptディレクティブがない場合はデフォルトで許可
-      return true;
     }
   }
   
-  // ディレクティブが見つからない場合はデフォルトで許可
+  // マッチするlocationディレクティブが見つからない場合はデフォルトで許可
   return true;
 }
 
