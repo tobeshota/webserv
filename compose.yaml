@@ -13,6 +13,7 @@ services:
       - ./conf:/app/conf
       - ./html:/app/html
       - ./redirected:/app/redirected
+      - ./cgi:/app/cgi
     ports:
       - "8080:80"
       - "8001:8001"
