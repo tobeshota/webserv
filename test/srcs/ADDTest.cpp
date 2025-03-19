@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "ADD.hpp"
+#include "GET.hpp"
 #include "Directive.hpp"
 #include "HTTPRequest.hpp"
 #include "HTTPResponse.hpp"
@@ -27,10 +27,10 @@ class MockDirective : public Directive {
 };
 
 // ハンドラをセットせずにテスト可能にするための派生クラス
-class TestableADD : public ADD {
+class TestableGET : public GET {
  public:
-  TestableADD(Directive rootDirective, HTTPRequest httpRequest)
-      : ADD(rootDirective, httpRequest) {}
+  TestableGET(Directive rootDirective, HTTPRequest httpRequest)
+      : GET(rootDirective, httpRequest) {}
 
   // _nextHandlerを確認するための関数
   Handler* getNextHandler() const { return _nextHandler; }
@@ -41,7 +41,7 @@ class TestableADD : public ADD {
   }
 };
 
-class ADDTest : public ::testing::Test {
+class GETTest : public ::testing::Test {
  protected:
   MockDirective mockDirective;
   HTTPResponse httpResponse;
@@ -56,22 +56,22 @@ class ADDTest : public ::testing::Test {
 };
 
 // 非CGIリクエストのテスト
-TEST_F(ADDTest, HandlesNonCgiRequest) {
+TEST_F(GETTest, HandlesNonCgiRequest) {
   // 通常のHTML要求を設定（コンストラクタで初期化）
   HTTPRequest httpRequest("GET", "/index.html", "HTTP/1.1",
                           std::map<std::string, std::string>(), "");
 
-  // テスト対象のADDを作成
-  TestableADD add(mockDirective, httpRequest);
+  // テスト対象のGETを作成
+  TestableGET get(mockDirective, httpRequest);
 
-  // モックハンドラを作成し、ADDのnextHandlerとしてセット
+  // モックハンドラを作成し、GETのnextHandlerとしてセット
   MockGenerateHTTPResponse* mockHandler = new MockGenerateHTTPResponse();
 
   // モックをセット (通常は内部で自動的に行われる)
-  add.setNextHandlerWithoutOwnership(mockHandler);
+  get.setNextHandlerWithoutOwnership(mockHandler);
 
   // テスト実行
-  add.handleRequest(httpResponse);
+  get.handleRequest(httpResponse);
 
   // handleRequestが呼ばれたことを確認
   EXPECT_TRUE(mockHandler->handleRequestCalled);
@@ -81,63 +81,63 @@ TEST_F(ADDTest, HandlesNonCgiRequest) {
 }
 
 // CGIリクエスト(.py)のテスト
-TEST_F(ADDTest, HandlesPythonCgiRequest) {
+TEST_F(GETTest, HandlesPythonCgiRequest) {
   // Pythonスクリプト要求を設定（コンストラクタで初期化）
   HTTPRequest httpRequest("GET", "/script.py", "HTTP/1.1",
                           std::map<std::string, std::string>(), "");
 
-  // テスト対象のADDを作成
-  ADD add(mockDirective, httpRequest);
+  // テスト対象のGETを作成
+  GET get(mockDirective, httpRequest);
 
   // モックハンドラを作成
   MockGenerateHTTPResponse mockHandler;
 
   // ハンドラをセット
-  add.setNextHandler(&mockHandler);
+  get.setNextHandler(&mockHandler);
 
   // テスト実行
-  add.handleRequest(httpResponse);
+  get.handleRequest(httpResponse);
 
   // CGIリクエストでもnextHandlerは呼ばれるはず
   EXPECT_TRUE(mockHandler.handleRequestCalled);
 }
 
 // CGIリクエスト(.sh)のテスト
-TEST_F(ADDTest, HandlesShellScriptCgiRequest) {
+TEST_F(GETTest, HandlesShellScriptCgiRequest) {
   // シェルスクリプト要求を設定（コンストラクタで初期化）
   HTTPRequest httpRequest("GET", "/script.sh", "HTTP/1.1",
                           std::map<std::string, std::string>(), "");
 
-  // テスト対象のADDを作成
-  ADD add(mockDirective, httpRequest);
+  // テスト対象のGETを作成
+  GET get(mockDirective, httpRequest);
 
   // モックハンドラを作成
   MockGenerateHTTPResponse mockHandler;
 
   // ハンドラをセット
-  add.setNextHandler(&mockHandler);
+  get.setNextHandler(&mockHandler);
 
   // テスト実行
-  add.handleRequest(httpResponse);
+  get.handleRequest(httpResponse);
 
   // CGIリクエストでもnextHandlerは呼ばれるはず
   EXPECT_TRUE(mockHandler.handleRequestCalled);
 }
 
 // CGIとnon-CGIで異なるHandlerが設定されることをテスト
-TEST_F(ADDTest, SetsCorrectNextHandler) {
+TEST_F(GETTest, SetsCorrectNextHandler) {
   // 非CGIリクエスト
   {
     // コンストラクタで初期化
     HTTPRequest httpRequest("GET", "/index.html", "HTTP/1.1",
                             std::map<std::string, std::string>(), "");
 
-    TestableADD add(mockDirective, httpRequest);
+    TestableGET get(mockDirective, httpRequest);
 
     MockGenerateHTTPResponse mockHandler;
-    add.setNextHandlerWithoutOwnership(&mockHandler);
+    get.setNextHandlerWithoutOwnership(&mockHandler);
 
-    add.handleRequest(httpResponse);
+    get.handleRequest(httpResponse);
 
     // ハンドラが呼び出されたことを確認
     EXPECT_TRUE(mockHandler.handleRequestCalled);
@@ -149,12 +149,12 @@ TEST_F(ADDTest, SetsCorrectNextHandler) {
     HTTPRequest httpRequest("GET", "/script.py", "HTTP/1.1",
                             std::map<std::string, std::string>(), "");
 
-    TestableADD add(mockDirective, httpRequest);
+    TestableGET get(mockDirective, httpRequest);
 
     MockGenerateHTTPResponse mockHandler;
-    add.setNextHandlerWithoutOwnership(&mockHandler);
+    get.setNextHandlerWithoutOwnership(&mockHandler);
 
-    add.handleRequest(httpResponse);
+    get.handleRequest(httpResponse);
 
     // ハンドラが呼び出されたことを確認
     EXPECT_TRUE(mockHandler.handleRequestCalled);

@@ -1,8 +1,8 @@
-#include "ADD.hpp"
+#include "GET.hpp"
 #include <sys/stat.h>
 #include <unistd.h>
 
-ADD::ADD(Directive rootDirective, HTTPRequest httpRequest)
+GET::GET(Directive rootDirective, HTTPRequest httpRequest)
     : _rootDirective(rootDirective), _httpRequest(httpRequest) {}
 
 // 指定された文字列が任意の文字列で終わるかを調べる関数
@@ -23,7 +23,7 @@ static bool fileIsReadable(const std::string& filePath) {
 }
 
 // 完全なファイルパスを取得する関数
-std::string ADD::getFullPath() const {
+std::string GET::getFullPath() const {
   // ホストディレクティブからrootの値を取得
   std::string rootValue;
   const Directive* hostDirective =
@@ -37,7 +37,7 @@ std::string ADD::getFullPath() const {
 }
 
 // HTTPステータスコードを設定する関数
-void ADD::setHttpStatusCode(HTTPResponse& httpResponse, const std::string& fullPath) {
+void GET::setHttpStatusCode(HTTPResponse& httpResponse, const std::string& fullPath) {
   std::string method = _httpRequest.getMethod();
 
   // メソッド確認
@@ -59,7 +59,7 @@ void ADD::setHttpStatusCode(HTTPResponse& httpResponse, const std::string& fullP
 }
 
 // HTTPレスポンスがCGIか確認する
-void ADD::handleRequest(HTTPResponse& httpResponse) {
+void GET::handleRequest(HTTPResponse& httpResponse) {
   // CGIの場合はCGIハンドラを呼び出す
   if (endsWith(_httpRequest.getURL(), ".py") ||
       endsWith(_httpRequest.getURL(), ".sh")) {
