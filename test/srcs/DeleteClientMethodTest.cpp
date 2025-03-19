@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
+#include <cstdio>  // std::removeのため
 #include <fstream>
-#include <cstdio> // std::removeのため
 
 #include "DeleteClientMethod.hpp"
 
@@ -17,11 +17,12 @@ TEST(DeleteClientMethodTest, SuccessfulDeletion) {
   std::ofstream file(testFile.c_str());
   file << "Test content";
   file.close();
-  
+
   // ファイルが作成されたことを確認
   ASSERT_TRUE(fileExists(testFile));
 
-  HTTPRequest req("DELETE", testFile, "HTTP/1.1", std::map<std::string, std::string>(), "");
+  HTTPRequest req("DELETE", testFile, "HTTP/1.1",
+                  std::map<std::string, std::string>(), "");
   HTTPResponse response;
   DeleteClientMethod handler(req);
 
@@ -40,8 +41,9 @@ TEST(DeleteClientMethodTest, FileNotFound) {
   if (fileExists(nonExistentFile)) {
     std::remove(nonExistentFile.c_str());
   }
-  
-  HTTPRequest req("DELETE", nonExistentFile, "HTTP/1.1", std::map<std::string, std::string>(), "");
+
+  HTTPRequest req("DELETE", nonExistentFile, "HTTP/1.1",
+                  std::map<std::string, std::string>(), "");
   HTTPResponse response;
   DeleteClientMethod handler(req);
 
@@ -54,16 +56,17 @@ TEST(DeleteClientMethodTest, FileNotFound) {
 
 TEST(DeleteClientMethodTest, ChainNextHandler) {
   // Setup
-  HTTPRequest req("DELETE", "test.txt", "HTTP/1.1", std::map<std::string, std::string>(), "");
+  HTTPRequest req("DELETE", "test.txt", "HTTP/1.1",
+                  std::map<std::string, std::string>(), "");
   HTTPResponse response;
   DeleteClientMethod handler(req);
-  
+
   class MockHandler : public Handler {
-  public:
+   public:
     bool called = false;
     void handleRequest(HTTPResponse&) { called = true; }
   };
-  
+
   MockHandler* mockNext = new MockHandler();
   handler.setNextHandler(mockNext);
 
@@ -77,7 +80,8 @@ TEST(DeleteClientMethodTest, ChainNextHandler) {
 
 TEST(DeleteClientMethodTest, EmptyURL) {
   // Setup
-  HTTPRequest req("DELETE", "", "HTTP/1.1", std::map<std::string, std::string>(), "");
+  HTTPRequest req("DELETE", "", "HTTP/1.1",
+                  std::map<std::string, std::string>(), "");
   HTTPResponse response;
   DeleteClientMethod handler(req);
 
@@ -90,7 +94,7 @@ TEST(DeleteClientMethodTest, EmptyURL) {
 
 TEST(DeleteClientMethodTest, InvalidFilePath) {
   // Setup
-  HTTPRequest req("DELETE", "/invalid/path/that/should/not/exist/*", "HTTP/1.1", 
+  HTTPRequest req("DELETE", "/invalid/path/that/should/not/exist/*", "HTTP/1.1",
                   std::map<std::string, std::string>(), "");
   HTTPResponse response;
   DeleteClientMethod handler(req);

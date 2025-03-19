@@ -7,10 +7,10 @@
 #include <iostream>
 #include <vector>
 
+#include "DeleteClientMethod.hpp"
+#include "HTTPRequestParser.hpp"
 #include "HTTPResponse.hpp"
 #include "PrintResponse.hpp"
-#include "HTTPRequestParser.hpp"
-#include "DeleteClientMethod.hpp"
 #include "ServerData.hpp"
 
 class RunServer {

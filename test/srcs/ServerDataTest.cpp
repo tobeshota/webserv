@@ -1,8 +1,9 @@
 #include <gtest/gtest.h>
+#include <sys/wait.h>  // waitpid用
+
+#include <cstring>  // strstr用
 
 #include "ServerData.hpp"
-#include <sys/wait.h>   // waitpid用
-#include <cstring>      // strstr用
 
 // ✅ ServerData のテストフィクスチャ
 class ServerDataTest : public ::testing::Test {
@@ -47,7 +48,7 @@ TEST_F(ServerDataTest, DefaultServerFdIsInvalid) {
 TEST_F(ServerDataTest, ServerBindSuccess) {
   // 実行前に既存のソケットをクリーンアップ
   system("fuser -k 8080/tcp >/dev/null 2>&1 || true");
-  
+
   serverData->set_server_fd();
 
   // アドレス設定
@@ -67,8 +68,8 @@ TEST_F(ServerDataTest, ServerBindSuccess) {
   struct sockaddr_in bound_addr;
   socklen_t addr_len = sizeof(bound_addr);
   EXPECT_EQ(getsockname(serverData->get_server_fd(),
-                      (struct sockaddr*)&bound_addr, &addr_len),
-          0);
+                        (struct sockaddr*)&bound_addr, &addr_len),
+            0);
   EXPECT_EQ(bound_addr.sin_port, htons(8080));
 }
 

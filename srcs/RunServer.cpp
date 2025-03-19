@@ -60,13 +60,13 @@ void RunServer::handle_client_data(size_t client_fd) {
     // テスト用のエコーレスポンスを送信
     // これにより HandleClientDataNormalFlow テストが期待する動作になる
     send(get_poll_fds()[client_fd].fd, buffer, bytes_read, 0);
-    
+
     PrintResponse print_response(get_poll_fds()[client_fd].fd);
     HTTPResponse response;
-    
+
     // 実際のレスポンス処理
     print_response.handleRequest(response);
-    
+
     // Connection: closeの場合は接続を閉じる
     close(get_poll_fds()[client_fd].fd);
     get_poll_fds().erase(get_poll_fds().begin() + client_fd);

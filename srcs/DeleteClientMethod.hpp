@@ -8,8 +8,9 @@
 class DeleteClientMethod : public Handler {
  protected:
   HTTPRequest _http;
+
  public:
-  DeleteClientMethod(HTTPRequest& http) : Handler() {_http = http; }
+  DeleteClientMethod(HTTPRequest& http) : Handler() { _http = http; }
   ~DeleteClientMethod() {}
   void handleRequest(HTTPResponse& httpResponse);
 };
