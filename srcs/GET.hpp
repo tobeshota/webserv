@@ -1,13 +1,10 @@
 #pragma once
 
-#include "CGI.hpp"  //  後に実装される
+#include "CGI.hpp"
 #include "GenerateHTTPResponse.hpp"
 #include "Handler.hpp"
 
-// リクエストボディの最大サイズ（例: 10MB）
-#define MAX_BODY_SIZE 10485760
-
-class ADD : public Handler {
+class GET : public Handler {
  private:
   Directive _rootDirective;
   HTTPRequest _httpRequest;
@@ -19,6 +16,6 @@ class ADD : public Handler {
   void setHttpStatusCode(HTTPResponse& httpResponse, const std::string& fullPath);
 
  public:
-  ADD(Directive rootDirective, HTTPRequest httpRequest);
+  GET(Directive rootDirective, HTTPRequest httpRequest);
   void handleRequest(HTTPResponse& httpResponse);
 };
