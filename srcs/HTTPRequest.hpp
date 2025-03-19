@@ -32,6 +32,10 @@ class HTTPRequest {
     return _headers;
   }
   std::string getHeader(const std::string& key) const;
+
+  // URLリダイレクトの実装に必要であるため追加．URLリダイレクトとはすなわち，HTTPリクエストのURLを変更することである．
+  void setURL(const std::string& url) { _url = url; }
+
   bool isValid() const { return _valid; }
   bool isKeepAlive() const { return _keepAlive; }  // keepAliveのゲッターを追加
 };

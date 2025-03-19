@@ -46,18 +46,19 @@ std::string GenerateHTTPResponse::generateHttpResponseHeader(
   return httpResponseHeader;
 }
 
+// filePathがサーバー上に存在するディレクトリかどうかを調べる
 bool isDirectory(const std::string& filePath) {
-  // 文字列が空でないかつ最後の文字が '/' であるかを確認
-  if (!filePath.empty() && filePath[filePath.length() - 1] == '/') {
-    return true;
+  struct stat st;
+  if (stat(filePath.c_str(), &st) != 0) {
+    return false;
   }
-  return false;
+  return S_ISDIR(st.st_mode);
 }
 
 std::string GenerateHTTPResponse::getPathForHttpResponseBody(
     const int status_code) {
-  // エラーステータスコード（2xx以外）の場合
-  if (status_code / 100 != 2) {
+  // エラーステータスコード（2xxまたは301）の場合
+  if (status_code / 100 != 2 && status_code != 301) {
     std::string errorPageValue, rootValue;
 
     // ステータスコードに対応するerror_pageディレクティブを探す
@@ -82,9 +83,9 @@ std::string GenerateHTTPResponse::getPathForHttpResponseBody(
     return DEFAULT_ERROR_PAGE;
   }
 
-  // 成功ステータス（2xx）の場合
+  // 成功ステータス（2xxまたは301）の場合
   std::string requestedURL = _httpRequest.getURL();
-  std::string rootValue;
+  std::string rootValue = "";
 
   // ホストディレクティブからrootの値を取得
   const Directive* hostDirective =
@@ -94,7 +95,7 @@ std::string GenerateHTTPResponse::getPathForHttpResponseBody(
   }
 
   // URLがディレクトリの場合
-  if (isDirectory(requestedURL)) {
+  if (isDirectory(rootValue + requestedURL)) {
     // インデックスファイルを探す
     const Directive* indexDirective = _rootDirective.findDirective(
         _httpRequest.getHeader("Host"), "location", requestedURL);
@@ -105,7 +106,9 @@ std::string GenerateHTTPResponse::getPathForHttpResponseBody(
       }
     }
     // インデックスディレクティブがなければデフォルトのindex.htmlを使用
-    return rootValue + requestedURL + "index.html";
+    std::string defaultIndexFileName =
+        requestedURL.end()[-1] == '/' ? "index.html" : "/index.html";
+    return rootValue + requestedURL + defaultIndexFileName;
   }
 
   // リクエストされたリソースのフルパスを返す
@@ -120,9 +123,18 @@ static bool endsWith(const std::string& str, const std::string& suffix) {
 
 std::string GenerateHTTPResponse::getDirectiveValue(std::string directiveKey) {
   std::string directiveValue;
+
+  // ホストディレクティブからrootの値を取得
+  std::string rootValue = "";
+  const Directive* hostDirective =
+      _rootDirective.findDirective(_httpRequest.getHeader("Host"));
+  if (hostDirective != NULL) {
+    rootValue = hostDirective->getValue("root");
+  }
+
   // 指定のホスト内の指定のロケーション内で指定ディレクティブdirectiveKeyの値があれば取得する
   std::string requestedURL = _httpRequest.getURL();
-  if (isDirectory(requestedURL)) {
+  if (isDirectory(rootValue + requestedURL)) {
     const Directive* locationDirective = _rootDirective.findDirective(
         _httpRequest.getHeader("Host"), "location", requestedURL);
     if (locationDirective != NULL) {
@@ -132,8 +144,6 @@ std::string GenerateHTTPResponse::getDirectiveValue(std::string directiveKey) {
   }
 
   // 指定のホスト内で指定ディレクティブdirectiveKeyの値があれば取得する
-  const Directive* hostDirective =
-      _rootDirective.findDirective(_httpRequest.getHeader("Host"));
   if (hostDirective != NULL) {
     directiveValue = hostDirective->getValue(directiveKey);
     if (!directiveValue.empty()) return directiveValue;
@@ -149,11 +159,16 @@ std::string GenerateHTTPResponse::generateHttpResponseBody(
 
   std::string httpResponseBody;
 
+  // URLリダイレクトすべきか
+  if (getDirectiveValue("return") != "") {
+    _httpRequest.setURL(getDirectiveValue("return"));
+  }
   // HTTPレスポンスがCGIの実行結果であるか
   if (endsWith(_httpRequest.getURL(), ".py") ||
       endsWith(_httpRequest.getURL(), ".sh")) {
     httpResponseBody = readFile(CGI_PAGE);
-  }  // ディレクトリリスニングすべきか
+  }
+  // ディレクトリリスニングすべきか
   else if (status_code == 200 && getDirectiveValue("autoindex") == "on" &&
            getDirectiveValue("root") != "") {
     ListenDirectory listenDirectory(getDirectiveValue("root"));
@@ -182,6 +197,8 @@ void GenerateHTTPResponse::handleRequest(HTTPResponse& httpResponse) {
       httpResponse.getHttpStatusCode(), pageFound));
   if (pageFound == false) {
     httpResponse.setHttpStatusCode(404);
+  } else if (getDirectiveValue("return") != "") {
+    httpResponse.setHttpStatusCode(301);
   }
   httpResponse.setHttpStatusLine(
       this->generateHttpStatusLine(httpResponse.getHttpStatusCode()));
