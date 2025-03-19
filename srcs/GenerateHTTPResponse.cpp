@@ -150,6 +150,30 @@ bool endsWith(const std::string& str, const std::string& suffix) {
          str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
 }
 
+std::string GenerateHTTPResponse::getDirectiveValue(std::string directiveKey) {
+  std::string directiveValue;
+  // 指定のホスト内の指定のロケーション内で指定ディレクティブdirectiveKeyの値があれば取得する
+  std::string requestedURL = _httpRequest.getURL();
+  if (isDirectory(requestedURL)) {
+    const Directive* locationDirective = _rootDirective.findDirective(
+        _httpRequest.getHeader("Host"), "location", requestedURL);
+    if (locationDirective != NULL) {
+      directiveValue = locationDirective->getValue(directiveKey);
+      if (!directiveValue.empty()) return directiveValue;
+    }
+  }
+
+  // 指定のホスト内で指定ディレクティブdirectiveKeyの値があれば取得する
+  const Directive* hostDirective =
+      _rootDirective.findDirective(_httpRequest.getHeader("Host"));
+  if (hostDirective != NULL) {
+    directiveValue = hostDirective->getValue(directiveKey);
+    if (!directiveValue.empty()) return directiveValue;
+  }
+
+  return "";
+}
+
 std::string GenerateHTTPResponse::generateHttpResponseBody(
     const int status_code, bool& pageFound) {
   // DELETEメソッドがコールされた場合，HTTPレスポンスボディを空にする
