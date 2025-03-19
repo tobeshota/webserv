@@ -68,6 +68,22 @@ void createTestPythonScript(const std::string& path,
   chmod(path.c_str(), 0755);
 }
 
+// テスト用のシェルスクリプトを作成
+void createTestShellScript(const std::string& path,
+                           const std::string& content) {
+  // ディレクトリが存在しない場合は作成
+  std::string dir = path.substr(0, path.find_last_of('/'));
+  std::string command = "mkdir -p " + dir;
+  system(command.c_str());
+
+  std::ofstream scriptFile(path.c_str());
+  scriptFile << content;
+  scriptFile.close();
+
+  // 実行権限を付与
+  chmod(path.c_str(), 0755);
+}
+
 // CGIテストフィクスチャ
 class CGITest : public ::testing::Test {
  protected:
@@ -121,6 +137,55 @@ class CGITest : public ::testing::Test {
         "#!/usr/bin/env python\n"
         "print(\"Content-Type: text/html\\n\\n\")\n"
         "print(\"<html><body>Directory Index</body></html>\")\n");
+
+    // テスト用のシェルスクリプトを作成
+    createTestShellScript(
+        "/tmp/webserv/www/test.sh",
+        "#!/bin/sh\n"
+        "echo \"Content-Type: text/html\"\n"
+        "echo \"\"\n"
+        "echo \"<html><body>Hello from Shell Script</body></html>\"\n");
+
+    createTestShellScript(
+        "/tmp/webserv/www/timeout_sh.sh",
+        "#!/bin/sh\n"
+        "sleep 35\n"  // タイムアウトテスト用
+        "echo \"Content-Type: text/html\"\n"
+        "echo \"\"\n"
+        "echo \"<html><body>This should timeout</body></html>\"\n");
+
+    createTestShellScript("/tmp/webserv/www/error_sh.sh",
+                          "#!/bin/sh\n"
+                          "exit 1\n");  // エラー終了テスト用
+
+    // POSTデータ処理テスト用シェルスクリプト
+    createTestShellScript(
+        "/tmp/webserv/www/post_sh.sh",
+        "#!/bin/sh\n"
+        "read POST_DATA\n"
+        "echo \"Content-Type: text/html\"\n"
+        "echo \"\"\n"
+        "echo \"<html><body>Received: $POST_DATA</body></html>\"\n");
+
+    // 環境変数表示テスト用シェルスクリプト
+    createTestShellScript("/tmp/webserv/www/env_sh.sh",
+                          "#!/bin/sh\n"
+                          "echo \"Content-Type: text/html\"\n"
+                          "echo \"\"\n"
+                          "echo \"<html><body>\"\n"
+                          "env | sort | while read line; do\n"
+                          "  echo \"$line<br>\"\n"
+                          "done\n"
+                          "echo \"</body></html>\"\n");
+
+    // ディレクトリとインデックスファイルのテスト用(シェルスクリプト版)
+    system("mkdir -p /tmp/webserv/www/testdir_sh/");
+    createTestShellScript(
+        "/tmp/webserv/www/testdir_sh/index.sh",
+        "#!/bin/sh\n"
+        "echo \"Content-Type: text/html\"\n"
+        "echo \"\"\n"
+        "echo \"<html><body>Directory Index from Shell</body></html>\"\n");
   }
 
   virtual void TearDown() {
@@ -444,6 +509,159 @@ TEST_F(CGITest, DirectoryListingGenerationTest) {
 
   // Clean up test files
   system("rm -rf /tmp/webserv/www/noindex/");
+}
+
+// シェルスクリプト拡張子の認識テスト
+TEST_F(CGITest, ShellScriptDetectionTest) {
+  Directive rootDirective = createTestDirective();
+
+  // シェルスクリプトの場合 - 実行されるはず
+  HTTPRequest shRequest = createTestRequest("GET", "/test.sh");
+  CGI cgiHandler1(rootDirective, shRequest);
+  HTTPResponse response1;
+  cgiHandler1.handleRequest(response1);
+
+  // レスポンスが処理されたことを確認（ステータスコードが設定されている）
+  EXPECT_EQ(200, response1.getHttpStatusCode());
+
+  // シェルスクリプトではない場合 - 実行されないはず
+  HTTPRequest htmlRequest = createTestRequest("GET", "/index.html");
+  CGI cgiHandler2(rootDirective, htmlRequest);
+  HTTPResponse response2;
+  cgiHandler2.handleRequest(response2);
+
+  // レスポンスが処理されていないことを確認（ステータスコードが設定されていない）
+  EXPECT_EQ(0, response2.getHttpStatusCode());
+}
+
+// シェルスクリプト実行（成功）のテスト
+TEST_F(CGITest, ExecuteShellCGISuccessTest) {
+  Directive rootDirective = createTestDirective();
+  HTTPRequest request = createTestRequest("GET", "/test.sh");
+
+  CGI cgiHandler(rootDirective, request);
+  HTTPResponse response;
+
+  cgiHandler.handleRequest(response);
+
+  // レスポンスのステータスコードが200であることを確認
+  EXPECT_EQ(200, response.getHttpStatusCode());
+
+  // CGIの出力ファイルが生成されていることを確認
+  EXPECT_TRUE(fileExists(CGI_PAGE));
+
+  // CGIの出力内容に期待する文字列が含まれていることを確認
+  std::string content = readFileContents(CGI_PAGE);
+  EXPECT_TRUE(content.find("Hello from Shell Script") != std::string::npos);
+}
+
+// エラー終了のシェルスクリプトテスト
+TEST_F(CGITest, ExecuteShellCGIErrorExitTest) {
+  Directive rootDirective = createTestDirective();
+  HTTPRequest request = createTestRequest("GET", "/error_sh.sh");
+
+  CGI cgiHandler(rootDirective, request);
+  HTTPResponse response;
+
+  cgiHandler.handleRequest(response);
+
+  // エラー終了するスクリプトの場合、500エラーになるはず
+  EXPECT_EQ(500, response.getHttpStatusCode());
+}
+
+// タイムアウトのシェルスクリプトテスト（注：実際の実行時間がかかります）
+TEST_F(CGITest, ExecuteShellCGITimeoutTest) {
+  Directive rootDirective = createTestDirective();
+  HTTPRequest request = createTestRequest("GET", "/timeout_sh.sh");
+
+  CGI cgiHandler(rootDirective, request);
+  HTTPResponse response;
+
+  cgiHandler.handleRequest(response);
+
+  // タイムアウトする場合、500エラーになるはず
+  EXPECT_EQ(500, response.getHttpStatusCode());
+}
+
+// POSTリクエスト処理のシェルスクリプトテスト
+TEST_F(CGITest, ExecuteShellCGIWithPostDataTest) {
+  Directive rootDirective = createTestDirective();
+
+  std::map<std::string, std::string> headers;
+  headers["Host"] = "localhost";
+  headers["Content-Type"] = "application/x-www-form-urlencoded";
+  headers["Content-Length"] = "9";
+
+  HTTPRequest request("POST", "/post_sh.sh", "HTTP/1.1", headers, "name=test",
+                      false);
+
+  CGI cgiHandler(rootDirective, request);
+  HTTPResponse response;
+
+  cgiHandler.handleRequest(response);
+
+  // レスポンスのステータスコードが200であることを確認
+  EXPECT_EQ(200, response.getHttpStatusCode());
+
+  // CGIの出力ファイルが生成されていることを確認
+  EXPECT_TRUE(fileExists(CGI_PAGE));
+
+  // CGIの出力内容にPOSTデータが反映されていることを確認
+  std::string content = readFileContents(CGI_PAGE);
+  EXPECT_TRUE(content.find("Received: name=test") != std::string::npos);
+}
+
+// 環境変数シェルスクリプトテスト
+TEST_F(CGITest, ShellEnvironmentVariablesTest) {
+  Directive rootDirective = createTestDirective();
+  HTTPRequest request = createTestRequest("GET", "/env_sh.sh?param=value");
+
+  CGI cgiHandler(rootDirective, request);
+  HTTPResponse response;
+
+  cgiHandler.handleRequest(response);
+
+  // レスポンスのステータスコードが200であることを確認
+  EXPECT_EQ(200, response.getHttpStatusCode());
+
+  // CGIの出力ファイルが生成されていることを確認
+  EXPECT_TRUE(fileExists(CGI_PAGE));
+
+  // 環境変数が正しく設定されていることを確認
+  std::string content = readFileContents(CGI_PAGE);
+  EXPECT_TRUE(content.find("REQUEST_METHOD=GET") != std::string::npos);
+  EXPECT_TRUE(content.find("QUERY_STRING=param=value") != std::string::npos);
+  EXPECT_TRUE(content.find("SERVER_NAME=localhost") != std::string::npos);
+}
+
+// シェルスクリプトを使ったディレクトリインデックスのテスト
+TEST_F(CGITest, ShellScriptDirectoryIndexTest) {
+  // テスト用のディレクトリ設定を追加
+  Directive rootDirective = createTestDirective();
+
+  // シェルスクリプトをインデックスとして使用するlocationディレクティブを追加
+  Directive hostDirective = *(rootDirective.findDirective("localhost"));
+  Directive shellLocationDirective("location");
+  shellLocationDirective.setName("/testdir_sh/");
+  shellLocationDirective.addKeyValue("index", "index.sh");
+  hostDirective.addChild(shellLocationDirective);
+
+  // ディレクトリへのリクエスト
+  HTTPRequest dirRequest = createTestRequest("GET", "/testdir_sh/");
+  CGI cgiHandler(rootDirective, dirRequest);
+  HTTPResponse response;
+  cgiHandler.handleRequest(response);
+
+  // インデックスファイルが正しく解決されたことを確認
+  EXPECT_EQ(200, response.getHttpStatusCode());
+
+  // CGIが実行された場合、出力ファイルが生成されているはず
+  if (fileExists(CGI_PAGE)) {
+    // CGIの出力内容に期待する文字列が含まれていることを確認
+    std::string content = readFileContents(CGI_PAGE);
+    EXPECT_TRUE(content.find("Directory Index from Shell") !=
+                std::string::npos);
+  }
 }
 
 int main(int argc, char** argv) {

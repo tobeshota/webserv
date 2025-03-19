@@ -30,7 +30,8 @@ class CGI : public Handler {
   bool readCGIResponse();
 
   // ユーティリティメソッド
-  bool isPythonScript(const std::string& url) const;
+  bool isSupportedScript(const std::string& url) const;  // 名前変更
+  std::string getScriptType(const std::string& url) const;  // 新メソッド追加
   std::string getScriptPath() const;
   void cleanupEnv(char** env) const;
 
