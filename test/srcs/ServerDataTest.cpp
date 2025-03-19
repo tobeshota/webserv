@@ -1,4 +1,7 @@
 #include <gtest/gtest.h>
+#include <sys/wait.h>  // waitpid用
+
+#include <cstring>  // strstr用
 
 #include "ServerData.hpp"
 
@@ -43,6 +46,9 @@ TEST_F(ServerDataTest, DefaultServerFdIsInvalid) {
 
 // ✅ server_bind() のテスト
 TEST_F(ServerDataTest, ServerBindSuccess) {
+  // 実行前に既存のソケットをクリーンアップ
+  system("fuser -k 8080/tcp >/dev/null 2>&1 || true");
+
   serverData->set_server_fd();
 
   // アドレス設定
