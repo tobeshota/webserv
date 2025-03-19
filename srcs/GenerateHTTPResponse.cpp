@@ -35,38 +35,6 @@ std::string readFile(const std::string& filePath) {
   return buffer.str();
 }
 
-// DateのHTTPレスポンスヘッダは省略する．必要になったら設定する．
-// #include <ctime>  // 時刻の取得や操作を行うためのヘッダ。time(), gmtime(),
-// struct tmなどの機能を提供。 #include <iomanip>  //
-// 入力/出力のフォーマット設定を行うためのヘッダ。std::setfill('0')やstd::setw(2)など、表示フォーマットを制御するために使用。
-// std::string getCurrentTimeInGMTFormat() {
-//   // 現在の時刻を取得
-//   time_t rawtime;
-//   struct tm* timeinfo;
-//   time(&rawtime);
-//   timeinfo = gmtime(&rawtime);  // GMT(UTC)に変換
-
-//   // 曜日の配列
-//   const char* weekdays[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
-//   // 月の配列
-//   const char* months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun",
-//                           "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
-
-//   // 出力用の文字列ストリーム
-//   std::stringstream result;
-
-//   // 現在時刻を指定の形式でストリームに追加
-//   result << weekdays[timeinfo->tm_wday] << ", " << timeinfo->tm_mday << " "
-//          << months[timeinfo->tm_mon] << " " << (1900 + timeinfo->tm_year) <<
-//          " "
-//          << std::setfill('0') << std::setw(2) << timeinfo->tm_hour << ":"
-//          << std::setfill('0') << std::setw(2) << timeinfo->tm_min << ":"
-//          << std::setfill('0') << std::setw(2) << timeinfo->tm_sec << " GMT";
-
-//   // 結果を返す
-//   return result.str();
-// }
-
 std::string GenerateHTTPResponse::generateHttpResponseHeader(
     const std::string& httpResponseBody) {
   std::string httpResponseHeader = "Server: webserv\n";
