@@ -195,6 +195,15 @@ void CGI::cleanupEnv(char** env) const {
   }
 }
 
+// Add this function for sleep functionality using clock()
+void portableSleep(int milliseconds) {
+  std::clock_t start_time = std::clock();
+  std::clock_t end_time = start_time + (milliseconds * CLOCKS_PER_SEC) / 1000;
+  while (std::clock() < end_time) {
+    // Busy wait - not ideal but C++98 compliant
+  }
+}
+
 bool CGI::executeCGI(const std::string& scriptPath) {
   // スクリプトが存在するか確認
   std::ifstream scriptFile(scriptPath.c_str());
@@ -299,21 +308,12 @@ bool CGI::executeCGI(const std::string& scriptPath) {
         testFile.close();
         return exists;
       }
-      // usleep(100000) の代わりに select() を使用
-      struct timeval tv;
-      tv.tv_sec = 0;
-      tv.tv_usec = 100000;  // 100ミリ秒
-      select(0, NULL, NULL, NULL, &tv);
+      portableSleep(100);  // 100 milliseconds
     }
 
     // タイムアウトした場合、子プロセスを強制終了
     kill(pid, SIGTERM);
-    // usleep(100000) の代わりに select() を使用
-    struct timeval tv;
-    tv.tv_sec = 0;
-    tv.tv_usec = 100000;  // 100ミリ秒
-    select(0, NULL, NULL, NULL, &tv);
-
+    portableSleep(100);  // 100 milliseconds
     kill(pid, SIGKILL);  // 確実に終了させる
     waitpid(pid, NULL, 0);
     return false;
