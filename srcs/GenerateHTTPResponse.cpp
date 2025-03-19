@@ -145,7 +145,7 @@ std::string GenerateHTTPResponse::getPathForHttpResponseBody(
 }
 
 // 指定された文字列が任意の文字列で終わるかを調べる関数
-bool endsWith(const std::string& str, const std::string& suffix) {
+static bool endsWith(const std::string& str, const std::string& suffix) {
   return str.size() >= suffix.size() &&
          str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
 }
