@@ -20,7 +20,7 @@ CGI::CGI(Directive rootDirective, HTTPRequest httpRequest)
 
 CGI::~CGI() {}
 
-bool CGI::isPythonScript(const std::string& url) const {
+bool CGI::isSupportedScript(const std::string& url) const {
   // クエリパラメータを削除
   std::string cleanUrl = url;
   size_t queryPos = cleanUrl.find('?');
@@ -33,13 +33,38 @@ bool CGI::isPythonScript(const std::string& url) const {
     return true;  // ディレクトリの場合も処理対象として認識
   }
 
-  // URLの拡張子が.pyかどうかをチェック
+  // URLの拡張子が.pyまたは.shかどうかをチェック
   size_t dotPos = cleanUrl.find_last_of('.');
   if (dotPos != std::string::npos) {
     std::string extension = cleanUrl.substr(dotPos);
-    return extension == ".py";
+    return extension == ".py" || extension == ".sh";
   }
   return false;
+}
+
+// スクリプトの種類を判別するヘルパーメソッド
+std::string CGI::getScriptType(const std::string& url) const {
+  // クエリパラメータを削除
+  std::string cleanUrl = url;
+  size_t queryPos = cleanUrl.find('?');
+  if (queryPos != std::string::npos) {
+    cleanUrl = cleanUrl.substr(0, queryPos);
+  }
+
+  // 拡張子を取得
+  size_t dotPos = cleanUrl.find_last_of('.');
+  if (dotPos != std::string::npos) {
+    std::string extension = cleanUrl.substr(dotPos);
+    if (extension == ".py") return "python";
+    if (extension == ".sh") return "shell";
+  }
+
+  // 特定の拡張子がない場合はディレクトリとして扱う
+  if (!cleanUrl.empty() && cleanUrl[cleanUrl.length() - 1] == '/') {
+    return "directory";
+  }
+
+  return "unknown";
 }
 
 static bool isDirectory(const std::string& filePath) {
@@ -74,7 +99,7 @@ std::string CGI::getScriptPath() const {
         _httpRequest.getHeader("Host"), "location", url);
     if (indexDirective != NULL) {
       std::string indexValue = indexDirective->getValue("index");
-      if (!indexValue.empty() && isPythonScript(indexValue)) {
+      if (!indexValue.empty() && isSupportedScript(indexValue)) {
         return rootValue + url + indexValue;
       }
     }
@@ -254,32 +279,56 @@ bool CGI::executeCGI(const std::string& scriptPath) {
       }
     }
 
-    // 複数のPythonパスを試す
-    const char* pythonPaths[] = {"/usr/bin/python3",
-                                 "/usr/bin/python",
-                                 "/usr/local/bin/python3",
-                                 "/usr/local/bin/python",
-                                 "/bin/python3",
-                                 "/bin/python",
-                                 "python3",
-                                 "python",
-                                 NULL};
+    // スクリプトタイプを判別
+    std::string scriptType = getScriptType(_httpRequest.getURL());
 
-    // 各Pythonパスを試す
-    for (int i = 0; pythonPaths[i] != NULL; ++i) {
-      // execle を execve に変更
-      char* args[] = {(char*)pythonPaths[i], (char*)scriptPath.c_str(), NULL};
-      execve(pythonPaths[i], args, envp);
+    if (scriptType == "python") {
+      // Pythonスクリプトの実行
+      const char* pythonPaths[] = {"/usr/bin/python3",
+                                   "/usr/bin/python",
+                                   "/usr/local/bin/python3",
+                                   "/usr/local/bin/python",
+                                   "/bin/python3",
+                                   "/bin/python",
+                                   "python3",
+                                   "python",
+                                   NULL};
+
+      // 各Pythonパスを試す
+      for (int i = 0; pythonPaths[i] != NULL; ++i) {
+        char* args[] = {(char*)pythonPaths[i], (char*)scriptPath.c_str(), NULL};
+        execve(pythonPaths[i], args, envp);
+      }
+
+      // 最後の手段として環境の $PATH から探す
+      char* args1[] = {(char*)"/usr/bin/env", (char*)"python3",
+                       (char*)scriptPath.c_str(), NULL};
+      execve("/usr/bin/env", args1, envp);
+
+      char* args2[] = {(char*)"/usr/bin/env", (char*)"python",
+                       (char*)scriptPath.c_str(), NULL};
+      execve("/usr/bin/env", args2, envp);
+    } else if (scriptType == "shell") {
+      // シェルスクリプトの実行
+      const char* shellPaths[] = {
+          "/bin/sh", "/bin/bash", "/usr/bin/sh", "/usr/bin/bash",
+          "sh",      "bash",      NULL};
+
+      // シェルの実行可能性を試す
+      for (int i = 0; shellPaths[i] != NULL; ++i) {
+        char* args[] = {(char*)shellPaths[i], (char*)scriptPath.c_str(), NULL};
+        execve(shellPaths[i], args, envp);
+      }
+
+      // 直接実行を試みる（スクリプトに実行権限がある場合）
+      char* args[] = {(char*)scriptPath.c_str(), NULL};
+      execve(scriptPath.c_str(), args, envp);
+
+      // 最後の手段としてenv経由で実行
+      char* envArgs[] = {(char*)"/usr/bin/env", (char*)"sh",
+                         (char*)scriptPath.c_str(), NULL};
+      execve("/usr/bin/env", envArgs, envp);
     }
-
-    // 最後の手段として環境の $PATH から探す
-    char* args1[] = {(char*)"/usr/bin/env", (char*)"python3",
-                     (char*)scriptPath.c_str(), NULL};
-    execve("/usr/bin/env", args1, envp);
-
-    char* args2[] = {(char*)"/usr/bin/env", (char*)"python",
-                     (char*)scriptPath.c_str(), NULL};
-    execve("/usr/bin/env", args2, envp);
 
     // すべて失敗した場合
     exit(1);
@@ -336,8 +385,8 @@ bool CGI::readCGIResponse() {
 }
 
 void CGI::handleRequest(HTTPResponse& httpResponse) {
-  // 非Pythonスクリプトの場合は処理せず、次のハンドラーに委譲
-  if (!isPythonScript(_httpRequest.getURL())) {
+  // サポートされていないスクリプトの場合は処理せず、次のハンドラーに委譲
+  if (!isSupportedScript(_httpRequest.getURL())) {
     httpResponse.setHttpStatusCode(
         0);  // ステータスコードを設定せず次のハンドラへ
 
@@ -352,7 +401,7 @@ void CGI::handleRequest(HTTPResponse& httpResponse) {
 
   // URLがディレクトリを指している場合
   if (isDirectory(_httpRequest.getURL())) {
-    // ディレクトリ内にPythonインデックスファイルがあるか確認
+    // ディレクトリ内にサポートされたインデックスファイルがあるか確認
     bool hasIndexScript = false;
 
     // indexディレクティブをチェック
@@ -360,8 +409,8 @@ void CGI::handleRequest(HTTPResponse& httpResponse) {
         _httpRequest.getHeader("Host"), "location", _httpRequest.getURL());
     if (indexDirective != NULL) {
       std::string indexValue = indexDirective->getValue("index");
-      if (!indexValue.empty() && isPythonScript(indexValue)) {
-        // Python インデックスファイルを実行
+      if (!indexValue.empty() && isSupportedScript(indexValue)) {
+        // サポートされたスクリプトを実行
         if (executeCGI(scriptPath) && readCGIResponse()) {
           // 成功: CGIが実行できたことを示すステータスコードを設定
           httpResponse.setHttpStatusCode(200);
@@ -376,7 +425,7 @@ void CGI::handleRequest(HTTPResponse& httpResponse) {
       httpResponse.setHttpResponseBody(generateDirectoryListing(scriptPath));
     }
   }
-  // 通常のPythonスクリプト実行
+  // 通常のスクリプト実行
   else if (executeCGI(scriptPath) && readCGIResponse()) {
     // 成功: CGIが実行できたことを示すステータスコードを設定
     httpResponse.setHttpStatusCode(200);
