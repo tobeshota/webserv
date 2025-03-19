@@ -153,7 +153,14 @@ std::string GenerateHTTPResponse::generateHttpResponseBody(
   if (endsWith(_httpRequest.getURL(), ".py") ||
       endsWith(_httpRequest.getURL(), ".sh")) {
     httpResponseBody = readFile(CGI_PAGE);
-  }  // ディレクトリリスニングすべきか
+  }  // HTTPリダイレクトすべきか
+  else if (getDirectiveValue("return") != "" &&
+           getDirectiveValue("root") != "") {
+    std::string redirectURL =
+        getDirectiveValue("root") + "/" + getDirectiveValue("return") + ".html";
+    httpResponseBody = readFile(redirectURL);
+  }
+  // ディレクトリリスニングすべきか
   else if (status_code == 200 && getDirectiveValue("autoindex") == "on" &&
            getDirectiveValue("root") != "") {
     ListenDirectory listenDirectory(getDirectiveValue("root"));
