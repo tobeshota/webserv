@@ -13,7 +13,8 @@ class GET : public Handler {
   std::string getFullPath() const;
 
   // HTTPステータスコードを設定する関数
-  void setHttpStatusCode(HTTPResponse& httpResponse, const std::string& fullPath);
+  void setHttpStatusCode(HTTPResponse& httpResponse,
+                         const std::string& fullPath);
 
  public:
   GET(Directive rootDirective, HTTPRequest httpRequest);

@@ -1,4 +1,5 @@
 #include "GET.hpp"
+
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -37,24 +38,25 @@ std::string GET::getFullPath() const {
 }
 
 // HTTPステータスコードを設定する関数
-void GET::setHttpStatusCode(HTTPResponse& httpResponse, const std::string& fullPath) {
+void GET::setHttpStatusCode(HTTPResponse& httpResponse,
+                            const std::string& fullPath) {
   std::string method = _httpRequest.getMethod();
 
   // メソッド確認
   if (method != "GET" && method != "POST" && method != "DELETE") {
-    httpResponse.setHttpStatusCode(405); // Method Not Allowed
+    httpResponse.setHttpStatusCode(405);  // Method Not Allowed
   }
   // ファイルの存在確認
   else if (!fileExists(fullPath)) {
-    httpResponse.setHttpStatusCode(404); // Not Found
+    httpResponse.setHttpStatusCode(404);  // Not Found
   }
   // ファイルへのアクセス権の確認
   else if (!fileIsReadable(fullPath)) {
-    httpResponse.setHttpStatusCode(403); // Forbidden
+    httpResponse.setHttpStatusCode(403);  // Forbidden
   }
   // 上記の全ての条件を満たしていれば200 OK
   else {
-    httpResponse.setHttpStatusCode(200); // OK
+    httpResponse.setHttpStatusCode(200);  // OK
   }
 }
 
