@@ -319,7 +319,7 @@ bool CGI::readCGIResponse() {
 void CGI::handleRequest(HTTPResponse& httpResponse) {
   // 非Pythonスクリプトの場合は処理せず、次のハンドラーに委譲
   if (!isPythonScript(_httpRequest.getURL())) {
-    httpResponse.setHttpStatusCode(0);
+    httpResponse.setHttpStatusCode(0); // ステータスコードを設定せず次のハンドラへ
 
     if (_nextHandler != NULL) {
       _nextHandler->handleRequest(httpResponse);
@@ -343,14 +343,8 @@ void CGI::handleRequest(HTTPResponse& httpResponse) {
       if (!indexValue.empty() && isPythonScript(indexValue)) {
         // Python インデックスファイルを実行
         if (executeCGI(scriptPath) && readCGIResponse()) {
-          // 成功: CGIの出力をレスポンスに設定
+          // 成功: CGIが実行できたことを示すステータスコードを設定
           httpResponse.setHttpStatusCode(200);
-
-          std::ifstream cgiFile(CGI_PAGE);
-          std::stringstream buffer;
-          buffer << cgiFile.rdbuf();
-          httpResponse.setHttpResponseBody(buffer.str());
-          cgiFile.close();
           hasIndexScript = true;
         }
       }
@@ -364,14 +358,8 @@ void CGI::handleRequest(HTTPResponse& httpResponse) {
   }
   // 通常のPythonスクリプト実行
   else if (executeCGI(scriptPath) && readCGIResponse()) {
-    // 成功: CGIの出力をレスポンスに設定
+    // 成功: CGIが実行できたことを示すステータスコードを設定
     httpResponse.setHttpStatusCode(200);
-
-    std::ifstream cgiFile(CGI_PAGE);
-    std::stringstream buffer;
-    buffer << cgiFile.rdbuf();
-    httpResponse.setHttpResponseBody(buffer.str());
-    cgiFile.close();
   } else {
     // 失敗: 500 Internal Server Error
     httpResponse.setHttpStatusCode(500);

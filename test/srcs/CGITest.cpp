@@ -352,9 +352,16 @@ TEST_F(CGITest, DirectoryPathResolutionTest) {
   // インデックスファイルが正しく解決されたことを確認
   EXPECT_EQ(200, response.getHttpStatusCode());
 
-  // CGIの出力内容に期待する文字列が含まれていることを確認
-  std::string content = response.getHttpResponseBody();
-  EXPECT_TRUE(content.find("Directory Index") != std::string::npos);
+  // CGIが実行された場合、出力ファイルが生成されているはず
+  if (fileExists(CGI_PAGE)) {
+    // CGIの出力内容に期待する文字列が含まれていることを確認
+    std::string content = readFileContents(CGI_PAGE);
+    EXPECT_TRUE(content.find("Directory Index") != std::string::npos);
+  } else {
+    // ファイルが生成されていない場合は、HTTPResponseボディがディレクトリリストである
+    std::string content = response.getHttpResponseBody();
+    EXPECT_TRUE(content.find("Directory Index: /testdir/") != std::string::npos);
+  }
 }
 
 // パス解決のエッジケースをテスト
@@ -388,9 +395,53 @@ TEST_F(CGITest, QueryParameterTest) {
   EXPECT_EQ(200, response.getHttpStatusCode());
 
   // クエリ文字列が正しく環境変数に設定されていることを確認
-  std::string content = response.getHttpResponseBody();
+  std::string content = readFileContents(CGI_PAGE);
   EXPECT_TRUE(content.find("QUERY_STRING: name=value&test=123") !=
               std::string::npos);
+}
+
+TEST_F(CGITest, DirectoryListingGenerationTest) {
+  // テスト用ディレクトリを作成（インデックスファイルなし）
+  system("mkdir -p /tmp/webserv/www/noindex/");
+  system("touch /tmp/webserv/www/noindex/test1.txt");
+  system("touch /tmp/webserv/www/noindex/test2.html");
+
+  // Create test directive structure that includes the noindex location
+  Directive rootDirective = createTestDirective();
+  
+  // Add a location for the noindex directory directly when creating the directive structure
+  // This assumes you can modify createTestDirective() or create a new helper method
+  
+  // For example, something like:
+  Directive hostDirective("server");
+  hostDirective.setName("localhost");
+  
+  Directive noindexDirective("location");
+  noindexDirective.setName("/noindex/");
+  hostDirective.addChild(noindexDirective);
+  
+  rootDirective.addChild(hostDirective);
+  
+  // Or alternatively, if you need to keep using findDirective(), check your class definition
+  // and consider adding a non-const version of findDirective()
+
+  HTTPRequest request = createTestRequest("GET", "/noindex/");
+
+  CGI cgiHandler(rootDirective, request);
+  HTTPResponse response;
+  cgiHandler.handleRequest(response);
+
+  // ディレクトリリストが生成され、200ステータスコードが設定されたことを確認
+  EXPECT_EQ(200, response.getHttpStatusCode());
+  
+  // ディレクトリリストがHTTPResponseボディに設定されたことを確認
+  std::string content = response.getHttpResponseBody();
+  EXPECT_TRUE(content.find("Directory Index: /noindex/") != std::string::npos);
+  EXPECT_TRUE(content.find("test1.txt") != std::string::npos);
+  EXPECT_TRUE(content.find("test2.html") != std::string::npos);
+  
+  // Clean up test files
+  system("rm -rf /tmp/webserv/www/noindex/");
 }
 
 int main(int argc, char** argv) {
