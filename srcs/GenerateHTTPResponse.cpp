@@ -57,7 +57,7 @@ bool isDirectory(const std::string& filePath) {
 
 std::string GenerateHTTPResponse::getPathForHttpResponseBody(
     const int status_code) {
-      // エラーステータスコード（2xxまたは301）の場合
+  // エラーステータスコード（2xxまたは301）の場合
   if (status_code / 100 != 2 && status_code != 301) {
     std::string errorPageValue, rootValue;
 
@@ -197,6 +197,8 @@ void GenerateHTTPResponse::handleRequest(HTTPResponse& httpResponse) {
       httpResponse.getHttpStatusCode(), pageFound));
   if (pageFound == false) {
     httpResponse.setHttpStatusCode(404);
+  } else if (getDirectiveValue("return") != "") {
+    httpResponse.setHttpStatusCode(301);
   }
   httpResponse.setHttpStatusLine(
       this->generateHttpStatusLine(httpResponse.getHttpStatusCode()));
