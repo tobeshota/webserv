@@ -6,6 +6,7 @@
 #include <sys/time.h>  // select() 用に追加
 #include <sys/wait.h>
 
+#include <cstdio>  // std::remove() 用に追加
 #include <cstdlib>
 #include <cstring>
 #include <ctime>  // time() 用に追加
@@ -203,7 +204,7 @@ bool CGI::executeCGI(const std::string& scriptPath) {
   scriptFile.close();
 
   // 既存のCGI出力ファイルを削除
-  unlink(CGI_PAGE);
+  std::remove(CGI_PAGE);  // unlink の代わりに std::remove を使用
 
   // 環境変数を設定
   char** envp = setupEnvironment(scriptPath);
@@ -257,12 +258,19 @@ bool CGI::executeCGI(const std::string& scriptPath) {
 
     // 各Pythonパスを試す
     for (int i = 0; pythonPaths[i] != NULL; ++i) {
-      execle(pythonPaths[i], pythonPaths[i], scriptPath.c_str(), NULL, envp);
+      // execle を execve に変更
+      char* args[] = {(char*)pythonPaths[i], (char*)scriptPath.c_str(), NULL};
+      execve(pythonPaths[i], args, envp);
     }
 
     // 最後の手段として環境の $PATH から探す
-    execle("/usr/bin/env", "env", "python3", scriptPath.c_str(), NULL, envp);
-    execle("/usr/bin/env", "env", "python", scriptPath.c_str(), NULL, envp);
+    char* args1[] = {(char*)"/usr/bin/env", (char*)"python3",
+                     (char*)scriptPath.c_str(), NULL};
+    execve("/usr/bin/env", args1, envp);
+
+    char* args2[] = {(char*)"/usr/bin/env", (char*)"python",
+                     (char*)scriptPath.c_str(), NULL};
+    execve("/usr/bin/env", args2, envp);
 
     // すべて失敗した場合
     exit(1);
