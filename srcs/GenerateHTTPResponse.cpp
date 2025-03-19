@@ -106,7 +106,8 @@ std::string GenerateHTTPResponse::getPathForHttpResponseBody(
       }
     }
     // インデックスディレクティブがなければデフォルトのindex.htmlを使用
-    std::string defaultIndexFileName = requestedURL.end()[-1] == '/' ? "index.html" : "/index.html";
+    std::string defaultIndexFileName =
+        requestedURL.end()[-1] == '/' ? "index.html" : "/index.html";
     return rootValue + requestedURL + defaultIndexFileName;
   }
 
