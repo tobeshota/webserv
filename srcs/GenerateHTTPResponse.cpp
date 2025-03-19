@@ -185,9 +185,9 @@ std::string GenerateHTTPResponse::generateHttpResponseBody(
   if (endsWith(_httpRequest.getURL(), ".py") ||
       endsWith(_httpRequest.getURL(), ".sh")) {
     httpResponseBody = readFile(CGI_PAGE);
-  } // ディレクトリリスニングすべきか
+  }  // ディレクトリリスニングすべきか
   else if (status_code == 200 && getDirectiveValue("autoindex") == "on" &&
-      getDirectiveValue("root") != "") {
+           getDirectiveValue("root") != "") {
     ListenDirectory listenDirectory(getDirectiveValue("root"));
     HTTPResponse response;
     listenDirectory.handleRequest(response);
