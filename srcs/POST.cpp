@@ -41,10 +41,10 @@ bool POST::directoryExists(const std::string& dirPath) const {
 // ファイルまたはディレクトリへの書き込み権限があるか確認する関数
 bool POST::hasWritePermission(const std::string& path) const {
   struct stat buffer;
-  
+
   // ファイルまたはディレクトリが存在するか確認
   if (stat(path.c_str(), &buffer) != 0) {
-    return false; // 存在しない場合は書き込み不可
+    return false;  // 存在しない場合は書き込み不可
   }
 
   // ディレクトリの場合は、より厳密にパーミッションビットをチェック
@@ -64,24 +64,25 @@ bool POST::hasWritePermission(const std::string& path) const {
       return (mode & S_IWOTH) != 0;
     }
   }
-  
+
   // 実際のアクセス権限をチェック（ファイルの場合）
   return access(path.c_str(), W_OK) == 0;
 }
 
 // リクエストボディサイズが制限内か確認する関数
 bool POST::isBodySizeAllowed(const std::string& body) const {
-  const Directive* hostDirective = 
+  const Directive* hostDirective =
       _rootDirective.findDirective(_httpRequest.getHeader("Host"));
-  
+
   if (hostDirective != NULL) {
-    std::string maxBodySizeStr = hostDirective->getValue("client_max_body_size");
+    std::string maxBodySizeStr =
+        hostDirective->getValue("client_max_body_size");
     if (!maxBodySizeStr.empty()) {
       // クライアント最大ボディサイズを解析
       size_t maxBodySize = 0;
       std::istringstream iss(maxBodySizeStr);
       iss >> maxBodySize;
-      
+
       // サイズ単位（M, K, G）があれば考慮
       if (iss.peek() == 'M' || iss.peek() == 'm') {
         maxBodySize *= 1024 * 1024;  // メガバイト
@@ -90,11 +91,11 @@ bool POST::isBodySizeAllowed(const std::string& body) const {
       } else if (iss.peek() == 'G' || iss.peek() == 'g') {
         maxBodySize *= 1024 * 1024 * 1024;  // ギガバイト
       }
-      
+
       return body.size() <= maxBodySize;
     }
   }
-  
+
   // 制限が指定されていない場合はデフォルトで1MBに制限
   return body.size() <= 1024 * 1024;
 }
@@ -103,33 +104,34 @@ bool POST::isBodySizeAllowed(const std::string& body) const {
 bool POST::isPostAllowedForPath(const std::string& path) const {
   // 未使用パラメータの警告を抑制
   (void)path;
-  
+
   // URLからパスを取得
   std::string url = _httpRequest.getURL();
-  
+
   // ホストディレクティブを取得
-  const Directive* hostDirective = 
+  const Directive* hostDirective =
       _rootDirective.findDirective(_httpRequest.getHeader("Host"));
-  
+
   if (hostDirective == NULL) {
-    return true; // ホストディレクティブが見つからなければデフォルトで許可
+    return true;  // ホストディレクティブが見つからなければデフォルトで許可
   }
-  
+
   // 最適なlocationディレクティブを探す
   std::string bestMatch = "";
   const Directive* bestLocationDirective = NULL;
-  
+
   // ホストディレクティブの子ディレクティブを探索
   const Directive::DirectiveList& children = hostDirective->children();
   for (size_t i = 0; i < children.size(); i++) {
     if (children[i].name() == "location") {
       // locationディレクティブからパス値を取得
       std::string locationPath = "";
-      Directive::KVMap::const_iterator it = children[i].keyValues().find("path");
+      Directive::KVMap::const_iterator it =
+          children[i].keyValues().find("path");
       if (it != children[i].keyValues().end() && !it->second.empty()) {
         locationPath = it->second[0];
       }
-      
+
       // URLがlocationPathで始まるかチェック
       if (url.find(locationPath) == 0) {
         // より長いマッチを優先 (より具体的なlocation)
@@ -140,16 +142,17 @@ bool POST::isPostAllowedForPath(const std::string& path) const {
       }
     }
   }
-  
+
   if (bestLocationDirective != NULL) {
     // limit_except ディレクティブの値を確認
-    std::string allowedMethods = bestLocationDirective->getValue("limit_except");
+    std::string allowedMethods =
+        bestLocationDirective->getValue("limit_except");
     if (!allowedMethods.empty()) {
       // POSTメソッドが許可されているか確認
       return allowedMethods.find("POST") != std::string::npos;
     }
   }
-  
+
   // マッチするlocationディレクティブが見つからない場合はデフォルトで許可
   return true;
 }
@@ -158,21 +161,21 @@ bool POST::isPostAllowedForPath(const std::string& path) const {
 std::string POST::processChunkedBody(const std::string& chunkedBody) {
   std::string result;
   size_t pos = 0;
-  
+
   while (pos < chunkedBody.size()) {
     // チャンクサイズを読み取る
     size_t eol = chunkedBody.find("\r\n", pos);
     if (eol == std::string::npos) break;
-    
+
     std::string chunkSizeHex = chunkedBody.substr(pos, eol - pos);
     // 16進数サイズを取得
     size_t chunkSize = 0;
     std::istringstream iss(chunkSizeHex);
     iss >> std::hex >> chunkSize;
-    
+
     // サイズが0ならチャンク終了
     if (chunkSize == 0) break;
-    
+
     // チャンクデータの開始位置
     size_t dataStart = eol + 2;
     if (dataStart + chunkSize <= chunkedBody.size()) {
@@ -185,28 +188,29 @@ std::string POST::processChunkedBody(const std::string& chunkedBody) {
       break;
     }
   }
-  
+
   return result;
 }
 
 // ファイルにデータを書き込む関数
-bool POST::writeToFile(const std::string& filePath, const std::string& content) {
+bool POST::writeToFile(const std::string& filePath,
+                       const std::string& content) {
   // ファイルを開く（既存ファイルは上書き）
   std::ofstream file(filePath.c_str(), std::ios::binary | std::ios::trunc);
   if (!file.is_open()) {
     return false;
   }
-  
+
   // コンテンツを書き込む
   file.write(content.c_str(), content.size());
   bool success = !file.bad();
   file.close();
-  
+
   return success;
 }
 
 // HTTPステータスコードを設定する関数
-void POST::setHttpStatusCode(HTTPResponse& httpResponse, 
+void POST::setHttpStatusCode(HTTPResponse& httpResponse,
                              const std::string& fullPath) {
   std::string method = _httpRequest.getMethod();
 
@@ -215,7 +219,7 @@ void POST::setHttpStatusCode(HTTPResponse& httpResponse,
     httpResponse.setHttpStatusCode(405);  // Method Not Allowed
     return;
   }
-  
+
   // POSTメソッドが許可されているか確認
   if (!isPostAllowedForPath(fullPath)) {
     httpResponse.setHttpStatusCode(405);  // Method Not Allowed
@@ -224,12 +228,12 @@ void POST::setHttpStatusCode(HTTPResponse& httpResponse,
 
   // リクエストボディのサイズ確認
   std::string body = _httpRequest.getBody();
-  
+
   // チャンク転送の場合はデコード
   if (_httpRequest.getHeader("Transfer-Encoding") == "chunked") {
     body = processChunkedBody(body);
   }
-  
+
   // ボディサイズ制限チェック
   if (!isBodySizeAllowed(body)) {
     httpResponse.setHttpStatusCode(413);  // Request Entity Too Large
@@ -270,21 +274,22 @@ void POST::setHttpStatusCode(HTTPResponse& httpResponse,
 }
 
 // POSTリクエストを処理する関数
-bool POST::handlePostRequest(HTTPResponse& httpResponse, const std::string& fullPath) {
+bool POST::handlePostRequest(HTTPResponse& httpResponse,
+                             const std::string& fullPath) {
   // すでに403などエラーステータスが設定されている場合は処理をスキップ
   if (httpResponse.getHttpStatusCode() != 200) {
     return false;
   }
-  
+
   std::string body = _httpRequest.getBody();
-  
+
   // チャンク転送の場合はデコード
   if (_httpRequest.getHeader("Transfer-Encoding") == "chunked") {
     body = processChunkedBody(body);
   }
-  
+
   // CGIスクリプトかどうか確認
-  if (fullPath.find(".py") != std::string::npos || 
+  if (fullPath.find(".py") != std::string::npos ||
       fullPath.find(".sh") != std::string::npos) {
     // CGIハンドラを呼び出す
     CGI cgi = CGI(_rootDirective, _httpRequest);
@@ -305,15 +310,15 @@ bool POST::handlePostRequest(HTTPResponse& httpResponse, const std::string& full
 // HTTPレスポンスを処理する
 void POST::handleRequest(HTTPResponse& httpResponse) {
   std::string fullPath = getFullPath();
-  
+
   // HTTPステータスコードを設定
   setHttpStatusCode(httpResponse, fullPath);
-  
+
   // ステータスコードが200の場合のみPOST処理を実行
   if (httpResponse.getHttpStatusCode() == 200) {
     handlePostRequest(httpResponse, fullPath);
   }
-  
+
   // チェーンの次のハンドラに処理を委譲
   if (_nextHandler != NULL) {
     _nextHandler->handleRequest(httpResponse);

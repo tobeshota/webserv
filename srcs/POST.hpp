@@ -13,10 +13,12 @@ class POST : public Handler {
   std::string getFullPath() const;
 
   // HTTPステータスコードを設定する関数
-  void setHttpStatusCode(HTTPResponse& httpResponse, const std::string& fullPath);
+  void setHttpStatusCode(HTTPResponse& httpResponse,
+                         const std::string& fullPath);
 
   // POSTリクエストを処理する関数
-  bool handlePostRequest(HTTPResponse& httpResponse, const std::string& fullPath);
+  bool handlePostRequest(HTTPResponse& httpResponse,
+                         const std::string& fullPath);
 
   // ファイルにデータを書き込む関数
   bool writeToFile(const std::string& filePath, const std::string& content);
