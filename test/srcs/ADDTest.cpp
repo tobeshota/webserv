@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
-#include "GET.hpp"
 #include "Directive.hpp"
+#include "GET.hpp"
 #include "HTTPRequest.hpp"
 #include "HTTPResponse.hpp"
 
