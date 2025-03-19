@@ -710,8 +710,6 @@ TEST_F(RedirectTest, NestedLocationRedirect) {
   hostDirective.addKeyValue("root", "./redirect_test");
 
   Directive locationDirective("location");
-  // エラー修正：addValueではなくaddKeyValueを使用する
-  // locationDirective.addValue("/api/");
   locationDirective.addKeyValue("path", "/api/");
   locationDirective.addKeyValue(
       "return", "target");  // locationディレクティブ内でリダイレクト
