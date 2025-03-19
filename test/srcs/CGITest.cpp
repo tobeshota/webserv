@@ -360,7 +360,8 @@ TEST_F(CGITest, DirectoryPathResolutionTest) {
   } else {
     // ファイルが生成されていない場合は、HTTPResponseボディがディレクトリリストである
     std::string content = response.getHttpResponseBody();
-    EXPECT_TRUE(content.find("Directory Index: /testdir/") != std::string::npos);
+    EXPECT_TRUE(content.find("Directory Index: /testdir/") !=
+                std::string::npos);
   }
 }
 
@@ -408,22 +409,23 @@ TEST_F(CGITest, DirectoryListingGenerationTest) {
 
   // Create test directive structure that includes the noindex location
   Directive rootDirective = createTestDirective();
-  
-  // Add a location for the noindex directory directly when creating the directive structure
-  // This assumes you can modify createTestDirective() or create a new helper method
-  
+
+  // Add a location for the noindex directory directly when creating the
+  // directive structure This assumes you can modify createTestDirective() or
+  // create a new helper method
+
   // For example, something like:
   Directive hostDirective("server");
   hostDirective.setName("localhost");
-  
+
   Directive noindexDirective("location");
   noindexDirective.setName("/noindex/");
   hostDirective.addChild(noindexDirective);
-  
+
   rootDirective.addChild(hostDirective);
-  
-  // Or alternatively, if you need to keep using findDirective(), check your class definition
-  // and consider adding a non-const version of findDirective()
+
+  // Or alternatively, if you need to keep using findDirective(), check your
+  // class definition and consider adding a non-const version of findDirective()
 
   HTTPRequest request = createTestRequest("GET", "/noindex/");
 
@@ -433,13 +435,13 @@ TEST_F(CGITest, DirectoryListingGenerationTest) {
 
   // ディレクトリリストが生成され、200ステータスコードが設定されたことを確認
   EXPECT_EQ(200, response.getHttpStatusCode());
-  
+
   // ディレクトリリストがHTTPResponseボディに設定されたことを確認
   std::string content = response.getHttpResponseBody();
   EXPECT_TRUE(content.find("Directory Index: /noindex/") != std::string::npos);
   EXPECT_TRUE(content.find("test1.txt") != std::string::npos);
   EXPECT_TRUE(content.find("test2.html") != std::string::npos);
-  
+
   // Clean up test files
   system("rm -rf /tmp/webserv/www/noindex/");
 }

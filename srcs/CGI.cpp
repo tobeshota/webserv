@@ -3,10 +3,12 @@
 #include <dirent.h>  // ディレクトリの内容を読み取るために追加
 #include <fcntl.h>
 #include <signal.h>
+#include <sys/time.h>  // select() 用に追加
 #include <sys/wait.h>
 
 #include <cstdlib>
 #include <cstring>
+#include <ctime>  // time() 用に追加
 #include <fstream>
 #include <iostream>
 #include <map>
@@ -274,8 +276,8 @@ bool CGI::executeCGI(const std::string& scriptPath) {
     int timeout = CGI_TIMEOUT;
 
     // 子プロセスの終了を待つ (タイムアウト付き)
-    time_t startTime = time(NULL);
-    while ((time(NULL) - startTime) < timeout) {
+    std::time_t startTime = std::time(NULL);
+    while ((std::time(NULL) - startTime) < timeout) {
       result = waitpid(pid, &status, WNOHANG);
       if (result == -1) {
         return false;  // エラー発生
@@ -289,12 +291,21 @@ bool CGI::executeCGI(const std::string& scriptPath) {
         testFile.close();
         return exists;
       }
-      usleep(100000);  // 100ミリ秒待機
+      // usleep(100000) の代わりに select() を使用
+      struct timeval tv;
+      tv.tv_sec = 0;
+      tv.tv_usec = 100000;  // 100ミリ秒
+      select(0, NULL, NULL, NULL, &tv);
     }
 
     // タイムアウトした場合、子プロセスを強制終了
     kill(pid, SIGTERM);
-    usleep(100000);
+    // usleep(100000) の代わりに select() を使用
+    struct timeval tv;
+    tv.tv_sec = 0;
+    tv.tv_usec = 100000;  // 100ミリ秒
+    select(0, NULL, NULL, NULL, &tv);
+
     kill(pid, SIGKILL);  // 確実に終了させる
     waitpid(pid, NULL, 0);
     return false;
@@ -319,7 +330,8 @@ bool CGI::readCGIResponse() {
 void CGI::handleRequest(HTTPResponse& httpResponse) {
   // 非Pythonスクリプトの場合は処理せず、次のハンドラーに委譲
   if (!isPythonScript(_httpRequest.getURL())) {
-    httpResponse.setHttpStatusCode(0); // ステータスコードを設定せず次のハンドラへ
+    httpResponse.setHttpStatusCode(
+        0);  // ステータスコードを設定せず次のハンドラへ
 
     if (_nextHandler != NULL) {
       _nextHandler->handleRequest(httpResponse);
