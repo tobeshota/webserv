@@ -7,10 +7,15 @@
 
 class DeleteClientMethod : public Handler {
  protected:
-  HTTPRequest _http;
+  HTTPRequest _httpRequest;
+  Directive _rootDirective;
 
  public:
-  DeleteClientMethod(HTTPRequest& http) : Handler() { _http = http; }
+  DeleteClientMethod(HTTPRequest& _httpRequest, Directive rootDirective) : Handler() {
+    this->_httpRequest = _httpRequest;
+    this->_rootDirective = rootDirective;
+  }
   ~DeleteClientMethod() {}
+  std::string getFullPath() const;
   void handleRequest(HTTPResponse& httpResponse);
 };

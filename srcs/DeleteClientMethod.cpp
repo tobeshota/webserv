@@ -2,9 +2,23 @@
 
 #include <cstdio>  // std::removeのため
 
+// 完全なファイルパスを取得する関数
+std::string DeleteClientMethod::getFullPath() const {
+  // ホストディレクティブからrootの値を取得
+  std::string rootValue;
+  const Directive* hostDirective =
+      _rootDirective.findDirective(_httpRequest.getHeader("Host"));
+  if (hostDirective != NULL) {
+    rootValue = hostDirective->getValue("root");
+  }
+
+  // URLとrootを結合して完全なパスを作成
+  return rootValue + _httpRequest.getURL();
+}
+
 void DeleteClientMethod::handleRequest(HTTPResponse& httpResponse) {
   // URLからファイルパスを取得
-  std::string filePath = _http.getURL();
+  std::string filePath = getFullPath();
 
   // ファイルを削除
   if (filePath.empty() || std::remove(filePath.c_str()) != 0) {
