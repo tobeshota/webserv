@@ -32,7 +32,7 @@ bool changePermission(const std::string& path, int mode) {
 // テスト用のディレクティブを作成
 Directive createTestDirective() {
   Directive rootDirective("root");
-  Directive hostDirective("localhost:8080");
+  Directive hostDirective("localhost");
   hostDirective.addKeyValue("root", "./test_files/");
   rootDirective.addChild(hostDirective);
   return rootDirective;
@@ -287,7 +287,7 @@ TEST_F(DeleteClientMethodTest, MultipleFileDeletions) {
 TEST_F(DeleteClientMethodTest, RootDirectivePathTest) {
   // カスタムルートディレクティブを作成
   Directive rootDirective("root");
-  Directive hostDirective("localhost:8080");
+  Directive hostDirective("localhost");
   hostDirective.addKeyValue("root", "./custom_path/");
   rootDirective.addChild(hostDirective);
 
