@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "MultiPortServer.hpp"
-#include "OSInit.hpp"
+// #include "OSInit.hpp"
 #include "RunServer.hpp"  // 明示的にインクルード
 #include "TOMLParser.hpp"
 
@@ -40,7 +40,7 @@ std::vector<int> getPorts() {
 
 int webserv(int argc, char** argv) {
   ServerData server_data;
-  OSInit os;
+  // OSInit os;
   RunServer run_server;
   std::vector<int> ports = getPorts();
 
