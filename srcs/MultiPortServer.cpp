@@ -74,8 +74,7 @@ bool MultiPortServer::initializeSockets() {
     addrs.push_back(address);
     success = true;
 
-    std::cout << "ポート " << port << " のサーバー初期化完了 (fd: " << server_fd
-              << ")" << std::endl;
+    std::cout << "Listening on port " << port << std::endl;
   }
 
   return success;  // 少なくとも1つのポートが成功したかどうか

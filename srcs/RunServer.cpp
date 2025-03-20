@@ -27,8 +27,7 @@ void RunServer::runMultiPort(MultiPortServer &server) {
     int poll_count = poll(poll_fds.data(), poll_fds.size(), -1);
 
     // デバッグ用出力
-    std::cout << "Poll イベント数: " << poll_count << std::endl;
-
+    std::cout << poll_count << std::endl;
     // イベント処理
     process_poll_events_multiport(server);
   }
@@ -49,9 +48,7 @@ void RunServer::handle_new_connection(int server_fd) {
   pollfd client_fd_poll;
   client_fd_poll.fd = new_socket;
   client_fd_poll.events = POLLIN;
-  std::cout << "poll_fds.size() " << get_poll_fds().size() << std::endl;
   get_poll_fds().push_back(client_fd_poll);
-  std::cout << "poll_fds.size() " << get_poll_fds().size() << std::endl;
 }
 
 // クライアントからのデータを処理する関数
@@ -123,7 +120,7 @@ void RunServer::process_poll_events_multiport(MultiPortServer &server) {
       // サーバーソケットのイベントかチェック
       if (server.isServerFd(current_fd)) {
         int port = server.getPortByFd(current_fd);
-        std::cout << "ポート " << port << " に新しい接続要求" << std::endl;
+        std::cout << "New connection on port " << port << std::endl;
         handle_new_connection(current_fd);
       } else {
         // クライアント接続からのデータ

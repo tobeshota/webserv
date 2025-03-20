@@ -7,20 +7,34 @@
 #include "RunServer.hpp"  // 明示的にインクルード
 #include "TOMLParser.hpp"
 
+//// 複数のポートを用意（本来はconfファイルから取得）の関数を作る
+std::vector<int> getPorts() {
+  std::vector<int> ports;
+  TOMLParser toml_parser;
+  Directive* directive = toml_parser.parseFromFile("./conf/webserv.conf");
+  if (directive == nullptr) {
+    std::cerr << "Failed to parse configuration file" << std::endl;
+    return ports;
+  }
+  // ポート番号を取得
+  std::vector<std::string> listen_directives = directive->getValues("listen");
+  std::cout << "listen_directives.size() " << listen_directives.size()
+            << std::endl;
+  for (size_t i = 0; i < listen_directives.size(); ++i) {
+    std::string port_str = listen_directives[i];
+    int port = std::stoi(port_str);
+    ports.push_back(port);
+  }
+  delete directive;
+  return ports;
+}
+
 int webserv(int argc, char** argv) {
   (void)argc;
   (void)argv;
 
   RunServer run_server;
-
-  // TOMLParser toml_parser;
-  // Directive* directive = toml_parser.parseFromFile("./conf/webserv.conf");
-
-  // 複数のポートを用意（本来はconfファイルから取得）
-  std::vector<int> ports;
-  ports.push_back(8080);
-  ports.push_back(8081);
-  ports.push_back(8082);
+  std::vector<int> ports = getPorts();
 
   // マルチポートサーバーを作成
   MultiPortServer server;
@@ -28,7 +42,7 @@ int webserv(int argc, char** argv) {
 
   // ソケット初期化
   if (!server.initializeSockets()) {
-    std::cerr << "サーバーソケットの初期化に失敗しました" << std::endl;
+    std::cerr << "Failed to initialize sockets" << std::endl;
     return EXIT_FAILURE;
   }
 
@@ -42,7 +56,7 @@ int webserv(int argc, char** argv) {
   }
 
   // イベントループ開始（メソッド名が正確に一致していることを確認）
-  std::cout << "複数ポート対応サーバー起動中..." << std::endl;
+  std::cout << "Starting multiport server" << std::endl;
   run_server.runMultiPort(
       server);  // このメソッド名が正確に一致していることを確認
 
