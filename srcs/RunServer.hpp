@@ -5,13 +5,15 @@
 
 #include <cstddef>
 #include <iostream>
-#include <map>
 #include <string>
 #include <vector>
 
 #include "HTTPResponse.hpp"
 #include "PrintResponse.hpp"
 #include "ServerData.hpp"
+
+// 前方宣言（循環参照を防ぐため）
+class MultiPortServer;
 
 class RunServer {
  private:
@@ -27,6 +29,9 @@ class RunServer {
 
   // 複数サーバー対応の関数
   void run(std::vector<ServerData *> &servers);
+  
+  // MultiPortServer対応の関数
+  void runMultiPort(MultiPortServer &server);
 
   void add_poll_fd(pollfd poll_fd);
   void handle_new_connection(int server_fd);
@@ -37,4 +42,7 @@ class RunServer {
 
   // 複数サーバー対応のイベント処理
   void process_poll_events(std::vector<ServerData *> &servers);
+  
+  // MultiPortServer対応のイベント処理
+  void process_poll_events_multiport(MultiPortServer &server);
 };

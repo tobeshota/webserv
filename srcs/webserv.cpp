@@ -4,70 +4,49 @@
 
 #include "OSInit.hpp"
 #include "TOMLParser.hpp"
+#include "MultiPortServer.hpp"
+#include "RunServer.hpp" // 明示的にインクルード
 
 int webserv(int argc, char** argv) {
   (void)argc;
   (void)argv;
 
-  OSInit os;
   RunServer run_server;
 
-  TOMLParser toml_parser;
-  Directive* directive = toml_parser.parseFromFile("./conf/webserv.conf");
+  // TOMLParser toml_parser;
+  // Directive* directive = toml_parser.parseFromFile("./conf/webserv.conf");
 
-  printDirective(*directive);  //  for debug
-
-  // C++98スタイルの初期化に修正
+  // 複数のポートを用意（本来はconfファイルから取得）
   std::vector<int> ports;
   ports.push_back(8080);
   ports.push_back(8081);
   ports.push_back(8082);
 
-  // 各ポート用のServerDataオブジェクトを作成
-  std::vector<ServerData*> servers;
-  for (size_t i = 0; i < ports.size(); ++i) {
-    ServerData* server = new ServerData(ports[i]);
-    servers.push_back(server);
+  // マルチポートサーバーを作成
+  MultiPortServer server;
+  server.setPorts(ports);
+  
+  // ソケット初期化
+  if (!server.initializeSockets()) {
+    std::cerr << "サーバーソケットの初期化に失敗しました" << std::endl;
+    return EXIT_FAILURE;
   }
-
-  // すべてのサーバーを初期化
-  os.initServers(servers);
-  // pollのために全サーバーを設定
-  os.set_serverspoll_data(servers, run_server);
-  // メインループを実行（複数サーバー対応版）
-  run_server.run(servers);
-  // RAIIにより、サーバーのファイルディスクリプタがクローズされる
-  os.close_servers_fds(servers);
-  for (size_t i = 0; i < servers.size(); ++i) {
-    delete servers[i];
+  
+  // pollのために各サーバーFDを設定
+  const std::vector<int>& server_fds = server.getServerFds();
+  for (size_t i = 0; i < server_fds.size(); ++i) {
+    pollfd poll_fd;
+    poll_fd.fd = server_fds[i];
+    poll_fd.events = POLLIN;
+    run_server.add_poll_fd(poll_fd);
   }
+  
+  // イベントループ開始（メソッド名が正確に一致していることを確認）
+  std::cout << "複数ポート対応サーバー起動中..." << std::endl;
+  run_server.runMultiPort(server);  // このメソッド名が正確に一致していることを確認
+  
+  // クリーンアップ（実行されることはないが念のため）
+  server.closeSockets();
 
   return EXIT_SUCCESS;
 }
-
-// #include <cstdlib>
-// #include <iostream>
-
-// #include "OSInit.hpp"
-// #include "TOMLParser.hpp"
-
-// int webserv(int argc, char** argv) {
-//   (void)argc;
-//   (void)argv;
-
-//   ServerData server_data;
-//   OSInit os;
-//   RunServer run_server;
-
-//   TOMLParser toml_parser;
-//   Directive* directive = toml_parser.parseFromFile("./conf/webserv.conf");
-
-//   printDirective(*directive);  //  for debug
-
-//   os.initServer(server_data);
-//   os.set_serverpoll_data(server_data, run_server);
-//   // メインループを実行
-//   run_server.run(server_data);
-//   os.close_server_fd(server_data);
-//   return EXIT_SUCCESS;
-// }
