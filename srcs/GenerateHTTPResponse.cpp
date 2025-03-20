@@ -122,7 +122,12 @@ static bool endsWith(const std::string& str, const std::string& suffix) {
 }
 
 std::string GenerateHTTPResponse::getDirectiveValue(std::string directiveKey) {
-  std::string directiveValue;
+  return getDirectiveValues(directiveKey)[0];
+}
+
+std::vector<std::string> GenerateHTTPResponse::getDirectiveValues(
+    std::string directiveKey) {
+  std::vector<std::string> directiveValues;
 
   // ホストディレクティブからrootの値を取得
   std::string rootValue = "";
@@ -138,18 +143,23 @@ std::string GenerateHTTPResponse::getDirectiveValue(std::string directiveKey) {
     const Directive* locationDirective = _rootDirective.findDirective(
         _httpRequest.getHeader("Host"), "location", requestedURL);
     if (locationDirective != NULL) {
-      directiveValue = locationDirective->getValue(directiveKey);
-      if (!directiveValue.empty()) return directiveValue;
+      directiveValues = locationDirective->getValues(directiveKey);
+      if (!directiveValues.empty()) return directiveValues;
     }
   }
 
-  // 指定のホスト内で指定ディレクティブdirectiveKeyの値があれば取得する
+  // 「指定のホスト内直下にある」かどうかを調べる．
   if (hostDirective != NULL) {
-    directiveValue = hostDirective->getValue(directiveKey);
-    if (!directiveValue.empty()) return directiveValue;
+    directiveValues = hostDirective->getValues(directiveKey, false);
+    if (!directiveValues.empty()) {
+      return directiveValues;
+    }
   }
 
-  return "";
+  // 何もないものを返す
+  std::vector<std::string> emptyVector;
+  emptyVector.push_back("");  // 空文字列を追加
+  return emptyVector;
 }
 
 std::string GenerateHTTPResponse::generateHttpResponseBody(
@@ -186,12 +196,28 @@ std::string GenerateHTTPResponse::generateHttpResponseBody(
   return httpResponseBody;
 }
 
+// std::vector<std::string>の要素に"指定のメソッド"が含まれているか
+static bool isContain(std::vector<std::string> vec, std::string str) {
+  for (std::vector<std::string>::iterator itr = vec.begin(); itr != vec.end();
+       ++itr) {
+    if (*itr == str) {
+      return true;
+    }
+  }
+  return false;
+}
+
 GenerateHTTPResponse::GenerateHTTPResponse(Directive rootDirective,
                                            HTTPRequest httpRequest)
     : _rootDirective(rootDirective), _httpRequest(httpRequest) {}
 
 void GenerateHTTPResponse::handleRequest(HTTPResponse& httpResponse) {
   bool pageFound = true;
+
+  // メソッドが許可されていない場合HttpStatusCodeを405に設定する
+  if (isContain(getDirectiveValues("deny"), _httpRequest.getMethod())) {
+    httpResponse.setHttpStatusCode(405);
+  }
 
   httpResponse.setHttpResponseBody(this->generateHttpResponseBody(
       httpResponse.getHttpStatusCode(), pageFound));
