@@ -6,11 +6,6 @@ RunServer::~RunServer() {}
 
 std::vector<pollfd> &RunServer::get_poll_fds() { return poll_fds; }
 
-// サーバーFDとServerDataオブジェクトのマッピングを追加
-void RunServer::add_server_mapping(int server_fd, ServerData *server) {
-  server_mappings[server_fd] = server;
-}
-
 // メインループを実行する関数（複数サーバー対応）
 void RunServer::run(std::vector<ServerData *> &servers) {
   while (true) {

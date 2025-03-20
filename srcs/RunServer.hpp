@@ -16,16 +16,11 @@
 class RunServer {
  private:
   std::vector<pollfd> poll_fds;
-  std::map<int, ServerData *>
-      server_mappings;  // サーバーFDとServerDataオブジェクトのマッピング
 
  public:
   RunServer();
   ~RunServer();
   std::vector<pollfd> &get_poll_fds();
-
-  // サーバーFDとServerDataオブジェクトのマッピングを追加
-  void add_server_mapping(int server_fd, ServerData *server);
 
   // 単一サーバー対応の関数
   void run(ServerData &server_data);

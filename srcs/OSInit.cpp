@@ -43,8 +43,6 @@ void OSInit::set_serverpoll_data(ServerData &server_data,
   server_fd_poll.events = POLLIN;
   // 設定した pollfd 構造体を run_server に追加
   run_server.add_poll_fd(server_fd_poll);
-  // サーバーFDとServerDataオブジェクトのマッピングを追加
-  run_server.add_server_mapping(server_data.get_server_fd(), &server_data);
 }
 
 // 複数サーバーのファイルディスクリプタを監視設定
@@ -56,7 +54,6 @@ void OSInit::set_serverspoll_data(std::vector<ServerData *> &servers,
     server_fd_poll.fd = servers[i]->get_server_fd();
     server_fd_poll.events = POLLIN;
     run_server.add_poll_fd(server_fd_poll);
-    run_server.add_server_mapping(servers[i]->get_server_fd(), servers[i]);
   }
 }
 
