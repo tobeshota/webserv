@@ -1,6 +1,9 @@
 #include "RunServer.hpp"
+#include "GET.hpp"
+#include "POST.hpp"
+#include "DeleteClientMethod.hpp"
 
-RunServer::RunServer() {}
+RunServer::RunServer() { setConfPath(DEFAULT_CONF_PATH); }
 
 RunServer::~RunServer() {}
 
@@ -10,9 +13,7 @@ std::vector<pollfd> &RunServer::get_poll_fds() { return poll_fds; }
 void RunServer::run(ServerData &server_data) {
   while (true) {
     // pollシステムコールを呼び出し、イベントを待つ
-    int poll_count = poll(poll_fds.data(), poll_fds.size(), -1);
-    // デバッグ用にpoll_countを出力
-    std::cout << poll_count << std::endl;
+    poll(poll_fds.data(), poll_fds.size(), -1);
     // pollイベントを処理
     process_poll_events(server_data);
   }
@@ -36,6 +37,23 @@ void RunServer::handle_new_connection(int server_fd) {
   get_poll_fds().push_back(client_fd_poll);
 }
 
+Handler *getHTTPMethodHandler(const std::string& HTTPMethod, Directive
+rootDirective, HTTPRequest httpRequest) {
+  // switch分岐でHTTPメソッドに対応するハンドラを返す
+  if (HTTPMethod == "GET") {
+    return new GET(rootDirective, httpRequest);
+  } else if (HTTPMethod == "POST") {
+    return new POST(rootDirective, httpRequest);
+  } else if (HTTPMethod == "DELETE") {
+    return new DeleteClientMethod(httpRequest, rootDirective);
+  } else {
+    // 未対応のHTTPメソッドの場合はGETハンドラを返す
+    // GETハンドラは405 Method Not Allowedを返す
+    return new GET(rootDirective, httpRequest);
+  }
+}
+
+#include "TOMLParser.hpp"
 // クライアントからのデータを処理する関数
 void RunServer::handle_client_data(size_t client_fd) {
   char buffer[4096] = {0};  // バッファを初期化
@@ -53,19 +71,33 @@ void RunServer::handle_client_data(size_t client_fd) {
   }
 
   buffer[bytes_read] = '\0';
-  std::cout << "Handling client data" << std::endl;
-  std::cout << "Received: " << buffer << std::endl;
-
   try {
-    // テスト用のエコーレスポンスを送信
-    // これにより HandleClientDataNormalFlow テストが期待する動作になる
-    send(get_poll_fds()[client_fd].fd, buffer, bytes_read, 0);
+    // HTTPリクエストをパース
+    HTTPRequestParser parser;
+    if (parser.feed(buffer, strlen(buffer))) {
+      if (parser.hasError()) {
+        throw std::invalid_argument("Failed to parse HTTP request");
+      }
+    } else {
+      throw std::invalid_argument("Failed to parse HTTP request: more data needed");
+    }
+    HTTPRequest httpRequest = parser.createRequest();
+    // ConfigからDirectiveを取得
+    TOMLParser toml_parser;
+    Directive *rootDirective = toml_parser.parseFromFile(getConfPath());
+    if (rootDirective == NULL) throw std::invalid_argument("Failed to parse Conf");
 
-    PrintResponse print_response(get_poll_fds()[client_fd].fd);
-    HTTPResponse response;
+    // HTTPレスポンスオブジェクトを作成
+    HTTPResponse httpResponse;
 
-    // 実際のレスポンス処理
-    print_response.handleRequest(response);
+    // 鎖をつなげる
+    Handler *handler = getHTTPMethodHandler(httpRequest.getMethod(), *rootDirective, httpRequest);
+    GenerateHTTPResponse generateHTTPResponse(*rootDirective, httpRequest);
+    PrintResponse printResponse(get_poll_fds()[client_fd].fd);
+    handler->setNextHandler(&generateHTTPResponse);
+    generateHTTPResponse.setNextHandler(&printResponse);
+    handler->handleRequest(httpResponse);
+    delete handler;
 
     // Connection: closeの場合は接続を閉じる
     close(get_poll_fds()[client_fd].fd);
