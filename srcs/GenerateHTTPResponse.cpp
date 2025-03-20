@@ -180,7 +180,8 @@ std::string GenerateHTTPResponse::generateHttpResponseBody(
   // ディレクトリリスニングすべきか
   else if (status_code == 200 && getDirectiveValue("autoindex") == "on" &&
            getDirectiveValue("root") != "") {
-    ListenDirectory listenDirectory(getDirectiveValue("root") + _httpRequest.getURL());
+    ListenDirectory listenDirectory(getDirectiveValue("root") +
+                                    _httpRequest.getURL());
     HTTPResponse response;
     listenDirectory.handleRequest(response);
     httpResponseBody = response.getHttpResponseBody();

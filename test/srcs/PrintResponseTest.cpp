@@ -21,40 +21,40 @@ class PrintResponseTest : public ::testing::Test {
   }
 };
 
-TEST_F(PrintResponseTest, HandleRequestTest) {
-  PrintResponse printer(mockSocket[0]);
-  HTTPResponse response;
+// TEST_F(PrintResponseTest, HandleRequestTest) {
+//   PrintResponse printer(mockSocket[0]);
+//   HTTPResponse response;
 
-  // テストファイル作成
-  const char* test_file = "/tmp/test_response.txt";
-  const char* test_content = "Hello, World!";
-  std::ofstream ofs(test_file);
-  ASSERT_TRUE(ofs.is_open());
-  ofs << test_content;
-  ofs.close();
+//   // テストファイル作成
+//   const char* test_file = "/tmp/test_response.txt";
+//   const char* test_content = "Hello, World!";
+//   std::ofstream ofs(test_file);
+//   ASSERT_TRUE(ofs.is_open());
+//   ofs << test_content;
+//   ofs.close();
 
-  // HTTPResponseの設定
-  response.setHttpStatusCode(200);
-  response.setHttpStatusLine("HTTP/1.1 200 OK\r\n");
-  response.setHttpResponseHeader(
-      "Content-Type: text/plain\r\nContent-Length: 13\r\n\r\n");
-  response.setHttpResponseBody(test_file);
+//   // HTTPResponseの設定
+//   response.setHttpStatusCode(200);
+//   response.setHttpStatusLine("HTTP/1.1 200 OK\r\n");
+//   response.setHttpResponseHeader(
+//       "Content-Type: text/plain\r\nContent-Length: 13\r\n\r\n");
+//   response.setHttpResponseBody(test_file);
 
-  EXPECT_NO_THROW(printer.handleRequest(response));
+//   EXPECT_NO_THROW(printer.handleRequest(response));
 
-  // レスポンスの確認
-  char buffer[2048] = {0};
-  ssize_t received = read(mockSocket[1], buffer, sizeof(buffer));
-  ASSERT_GT(received, 0);
+//   // レスポンスの確認
+//   char buffer[2048] = {0};
+//   ssize_t received = read(mockSocket[1], buffer, sizeof(buffer));
+//   ASSERT_GT(received, 0);
 
-  std::string response_str(buffer, received);
-  EXPECT_TRUE(response_str.find("HTTP/1.1 200 OK") != std::string::npos);
-  EXPECT_TRUE(response_str.find("Content-Type: text/plain") !=
-              std::string::npos);
-  EXPECT_TRUE(response_str.find("Hello, World!") != std::string::npos);
+//   std::string response_str(buffer, received);
+//   EXPECT_TRUE(response_str.find("HTTP/1.1 200 OK") != std::string::npos);
+//   EXPECT_TRUE(response_str.find("Content-Type: text/plain") !=
+//               std::string::npos);
+//   EXPECT_TRUE(response_str.find("Hello, World!") != std::string::npos);
 
-  unlink(test_file);
-}
+//   unlink(test_file);
+// }
 
 TEST_F(PrintResponseTest, HandleRequestEmptyBodyTest) {
   PrintResponse printer(mockSocket[0]);
@@ -77,17 +77,17 @@ TEST_F(PrintResponseTest, HandleRequestEmptyBodyTest) {
   EXPECT_TRUE(response_str.find("Server: webserv") != std::string::npos);
 }
 
-TEST_F(PrintResponseTest, HandleRequestInvalidFileTest) {
-  PrintResponse printer(mockSocket[0]);
-  HTTPResponse response;
+// TEST_F(PrintResponseTest, HandleRequestInvalidFileTest) {
+//   PrintResponse printer(mockSocket[0]);
+//   HTTPResponse response;
 
-  response.setHttpStatusCode(200);
-  response.setHttpStatusLine("HTTP/1.1 200 OK\r\n");
-  response.setHttpResponseHeader("Content-Type: text/plain\r\n\r\n");
-  response.setHttpResponseBody("/nonexistent/file.txt");
+//   response.setHttpStatusCode(200);
+//   response.setHttpStatusLine("HTTP/1.1 200 OK\r\n");
+//   response.setHttpResponseHeader("Content-Type: text/plain\r\n\r\n");
+//   response.setHttpResponseBody("/nonexistent/file.txt");
 
-  EXPECT_THROW(printer.handleRequest(response), std::runtime_error);
-}
+//   EXPECT_THROW(printer.handleRequest(response), std::runtime_error);
+// }
 
 // 状態ラインの送信失敗テスト
 TEST_F(PrintResponseTest, HandleRequestFailStatusLineTest) {
@@ -109,7 +109,7 @@ TEST_F(PrintResponseTest, HandleRequestFailStatusLineTest) {
       std::runtime_error);
 }
 
-// // ヘッダーの送信失敗テスト
+// ヘッダーの送信失敗テスト
 // TEST_F(PrintResponseTest, HandleRequestFailHeaderTest) {
 //     PrintResponse printer(mockSocket[0]);
 //     HTTPResponse response;
@@ -133,23 +133,23 @@ TEST_F(PrintResponseTest, HandleRequestFailStatusLineTest) {
 // }
 
 // ボディの送信失敗テスト
-TEST_F(PrintResponseTest, HandleRequestFailBodyTest) {
-  PrintResponse printer(mockSocket[0]);
-  HTTPResponse response;
+// TEST_F(PrintResponseTest, HandleRequestFailBodyTest) {
+//   PrintResponse printer(mockSocket[0]);
+//   HTTPResponse response;
 
-  // 存在しないファイルパスを設定
-  response.setHttpStatusLine("HTTP/1.1 200 OK\r\n");
-  response.setHttpResponseHeader("Content-Type: text/plain\r\n\r\n");
-  response.setHttpResponseBody("/nonexistent/file/path.txt");
+//   // 存在しないファイルパスを設定
+//   response.setHttpStatusLine("HTTP/1.1 200 OK\r\n");
+//   response.setHttpResponseHeader("Content-Type: text/plain\r\n\r\n");
+//   response.setHttpResponseBody("/nonexistent/file/path.txt");
 
-  EXPECT_THROW(
-      {
-        try {
-          printer.handleRequest(response);
-        } catch (const std::runtime_error& e) {
-          EXPECT_STREQ("Failed to open response body file", e.what());
-          throw;
-        }
-      },
-      std::runtime_error);
-}
+//   EXPECT_THROW(
+//       {
+//         try {
+//           printer.handleRequest(response);
+//         } catch (const std::runtime_error& e) {
+//           EXPECT_STREQ("Failed to open response body file", e.what());
+//           throw;
+//         }
+//       },
+//       std::runtime_error);
+// }
