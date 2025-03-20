@@ -13,6 +13,7 @@
 
 #define PORT 80  //  confからとってくるべき
 #define MAX_CONNECTION 3
+#define DEFAULT_CONF_PATH "./conf/webserv.conf"
 
 class IServerFunctions {
  public:
