@@ -29,7 +29,7 @@ class RunServer {
 
   // 複数サーバー対応の関数
   void run(std::vector<ServerData *> &servers);
-  
+
   // MultiPortServer対応の関数
   void runMultiPort(MultiPortServer &server);
 
@@ -42,7 +42,7 @@ class RunServer {
 
   // 複数サーバー対応のイベント処理
   void process_poll_events(std::vector<ServerData *> &servers);
-  
+
   // MultiPortServer対応のイベント処理
   void process_poll_events_multiport(MultiPortServer &server);
 };

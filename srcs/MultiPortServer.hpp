@@ -16,10 +16,10 @@
 
 class MultiPortServer {
  private:
-  std::vector<int> ports;                // 監視するポート番号のリスト
-  std::map<int, int> fd_to_port;         // サーバーFD→ポート番号のマッピング
-  std::vector<int> server_fds;           // サーバーFDのリスト
-  std::vector<struct sockaddr_in> addrs; // 各ポートのアドレス情報
+  std::vector<int> ports;         // 監視するポート番号のリスト
+  std::map<int, int> fd_to_port;  // サーバーFD→ポート番号のマッピング
+  std::vector<int> server_fds;            // サーバーFDのリスト
+  std::vector<struct sockaddr_in> addrs;  // 各ポートのアドレス情報
 
  public:
   MultiPortServer();
@@ -37,7 +37,7 @@ class MultiPortServer {
   const std::vector<int>& getPorts() const;
   int getPortByFd(int fd) const;
   bool isServerFd(int fd) const;
-  
+
   // サーバーソケットをクローズ
   void closeSockets();
 };

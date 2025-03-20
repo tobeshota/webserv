@@ -1,4 +1,5 @@
 #include "RunServer.hpp"
+
 #include "MultiPortServer.hpp"
 
 RunServer::RunServer() {}
@@ -24,10 +25,10 @@ void RunServer::runMultiPort(MultiPortServer &server) {
   while (true) {
     // pollシステムコールを呼び出し、イベントを待つ
     int poll_count = poll(poll_fds.data(), poll_fds.size(), -1);
-    
+
     // デバッグ用出力
     std::cout << "Poll イベント数: " << poll_count << std::endl;
-    
+
     // イベント処理
     process_poll_events_multiport(server);
   }
@@ -118,7 +119,7 @@ void RunServer::process_poll_events_multiport(MultiPortServer &server) {
     // イベントが発生したかチェック
     if (get_poll_fds()[i].revents & POLLIN) {
       int current_fd = get_poll_fds()[i].fd;
-      
+
       // サーバーソケットのイベントかチェック
       if (server.isServerFd(current_fd)) {
         int port = server.getPortByFd(current_fd);

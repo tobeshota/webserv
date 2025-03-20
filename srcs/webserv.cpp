@@ -2,10 +2,10 @@
 #include <iostream>
 #include <vector>
 
-#include "OSInit.hpp"
-#include "TOMLParser.hpp"
 #include "MultiPortServer.hpp"
-#include "RunServer.hpp" // 明示的にインクルード
+#include "OSInit.hpp"
+#include "RunServer.hpp"  // 明示的にインクルード
+#include "TOMLParser.hpp"
 
 int webserv(int argc, char** argv) {
   (void)argc;
@@ -25,13 +25,13 @@ int webserv(int argc, char** argv) {
   // マルチポートサーバーを作成
   MultiPortServer server;
   server.setPorts(ports);
-  
+
   // ソケット初期化
   if (!server.initializeSockets()) {
     std::cerr << "サーバーソケットの初期化に失敗しました" << std::endl;
     return EXIT_FAILURE;
   }
-  
+
   // pollのために各サーバーFDを設定
   const std::vector<int>& server_fds = server.getServerFds();
   for (size_t i = 0; i < server_fds.size(); ++i) {
@@ -40,11 +40,12 @@ int webserv(int argc, char** argv) {
     poll_fd.events = POLLIN;
     run_server.add_poll_fd(poll_fd);
   }
-  
+
   // イベントループ開始（メソッド名が正確に一致していることを確認）
   std::cout << "複数ポート対応サーバー起動中..." << std::endl;
-  run_server.runMultiPort(server);  // このメソッド名が正確に一致していることを確認
-  
+  run_server.runMultiPort(
+      server);  // このメソッド名が正確に一致していることを確認
+
   // クリーンアップ（実行されることはないが念のため）
   server.closeSockets();
 
