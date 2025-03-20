@@ -38,7 +38,6 @@ std::string readFile(const std::string& filePath) {
 std::string GenerateHTTPResponse::generateHttpResponseHeader(
     const std::string& httpResponseBody) {
   std::string httpResponseHeader = "Server: webserv\n";
-  // httpResponseHeader += "Date: " + getCurrentTimeInGMTFormat() + "\n";
   httpResponseHeader += "Content-Type: text/html\n";
   httpResponseHeader +=
       "Content-Length: " + int2str(httpResponseBody.size()) + "\n";
@@ -181,7 +180,7 @@ std::string GenerateHTTPResponse::generateHttpResponseBody(
   // ディレクトリリスニングすべきか
   else if (status_code == 200 && getDirectiveValue("autoindex") == "on" &&
            getDirectiveValue("root") != "") {
-    ListenDirectory listenDirectory(getDirectiveValue("root"));
+    ListenDirectory listenDirectory(getDirectiveValue("root") + _httpRequest.getURL());
     HTTPResponse response;
     listenDirectory.handleRequest(response);
     httpResponseBody = response.getHttpResponseBody();
