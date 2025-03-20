@@ -63,7 +63,7 @@ std::string GenerateHTTPResponse::getPathForHttpResponseBody(
 
     // ステータスコードに対応するerror_pageディレクティブを探す
     const Directive* errorPageDirective = _rootDirective.findDirective(
-      _httpRequest.getServerName(), "error_page");
+        _httpRequest.getServerName(), "error_page");
     if (errorPageDirective != NULL) {
       errorPageValue = errorPageDirective->getValue(int2str(status_code));
     }
@@ -98,7 +98,7 @@ std::string GenerateHTTPResponse::getPathForHttpResponseBody(
   if (isDirectory(rootValue + requestedURL)) {
     // インデックスファイルを探す
     const Directive* indexDirective = _rootDirective.findDirective(
-      _httpRequest.getServerName(), "location", requestedURL);
+        _httpRequest.getServerName(), "location", requestedURL);
     if (indexDirective != NULL) {
       std::string indexValue = indexDirective->getValue("index");
       if (!indexValue.empty()) {
@@ -141,7 +141,7 @@ std::vector<std::string> GenerateHTTPResponse::getDirectiveValues(
   std::string requestedURL = _httpRequest.getURL();
   if (isDirectory(rootValue + requestedURL)) {
     const Directive* locationDirective = _rootDirective.findDirective(
-      _httpRequest.getServerName(), "location", requestedURL);
+        _httpRequest.getServerName(), "location", requestedURL);
     if (locationDirective != NULL) {
       directiveValues = locationDirective->getValues(directiveKey);
       if (!directiveValues.empty()) return directiveValues;

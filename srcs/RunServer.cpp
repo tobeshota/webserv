@@ -1,7 +1,8 @@
 #include "RunServer.hpp"
+
+#include "DeleteClientMethod.hpp"
 #include "GET.hpp"
 #include "POST.hpp"
-#include "DeleteClientMethod.hpp"
 
 RunServer::RunServer() { setConfPath(DEFAULT_CONF_PATH); }
 
@@ -37,8 +38,9 @@ void RunServer::handle_new_connection(int server_fd) {
   get_poll_fds().push_back(client_fd_poll);
 }
 
-Handler *getHTTPMethodHandler(const std::string& HTTPMethod, Directive
-rootDirective, HTTPRequest httpRequest) {
+Handler *getHTTPMethodHandler(const std::string &HTTPMethod,
+                              Directive rootDirective,
+                              HTTPRequest httpRequest) {
   // switch分岐でHTTPメソッドに対応するハンドラを返す
   if (HTTPMethod == "GET") {
     return new GET(rootDirective, httpRequest);
@@ -79,19 +81,22 @@ void RunServer::handle_client_data(size_t client_fd) {
         throw std::invalid_argument("Failed to parse HTTP request");
       }
     } else {
-      throw std::invalid_argument("Failed to parse HTTP request: more data needed");
+      throw std::invalid_argument(
+          "Failed to parse HTTP request: more data needed");
     }
     HTTPRequest httpRequest = parser.createRequest();
     // ConfigからDirectiveを取得
     TOMLParser toml_parser;
     Directive *rootDirective = toml_parser.parseFromFile(getConfPath());
-    if (rootDirective == NULL) throw std::invalid_argument("Failed to parse Conf");
+    if (rootDirective == NULL)
+      throw std::invalid_argument("Failed to parse Conf");
 
     // HTTPレスポンスオブジェクトを作成
     HTTPResponse httpResponse;
 
     // 鎖をつなげる
-    Handler *handler = getHTTPMethodHandler(httpRequest.getMethod(), *rootDirective, httpRequest);
+    Handler *handler = getHTTPMethodHandler(httpRequest.getMethod(),
+                                            *rootDirective, httpRequest);
     GenerateHTTPResponse generateHTTPResponse(*rootDirective, httpRequest);
     PrintResponse printResponse(get_poll_fds()[client_fd].fd);
     handler->setNextHandler(&generateHTTPResponse);
