@@ -18,13 +18,9 @@ void ServerData::set_address_data() {
 }
 
 // ポート番号の取得と設定メソッドを追加
-int ServerData::get_port() const {
-  return port;
-}
+int ServerData::get_port() const { return port; }
 
-void ServerData::set_port(int port) {
-  this->port = port;
-}
+void ServerData::set_port(int port) { this->port = port; }
 
 void ServerData::set_server_fd() {
   // ソケットの作成

@@ -244,8 +244,8 @@ TEST(RunServerTest, HandleClientDataIfConditions) {
 //   server_addr.sin_family = AF_INET;
 //   server_addr.sin_addr.s_addr = INADDR_ANY;
 //   server_addr.sin_port = htons(8080);
-//   ASSERT_NE(bind(server_fd, (sockaddr*)&server_addr, sizeof(server_addr)), -1);
-//   ASSERT_NE(listen(server_fd, 1), -1);
+//   ASSERT_NE(bind(server_fd, (sockaddr*)&server_addr, sizeof(server_addr)),
+//   -1); ASSERT_NE(listen(server_fd, 1), -1);
 
 //   // クライアント接続
 //   int client_fd = socket(AF_INET, SOCK_STREAM, 0);

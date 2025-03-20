@@ -22,7 +22,7 @@ int webserv(int argc, char** argv) {
   ports.push_back(8080);
   ports.push_back(8081);
   ports.push_back(8082);
-  
+
   // 各ポート用のServerDataオブジェクトを作成
   std::vector<ServerData*> servers;
   for (size_t i = 0; i < ports.size(); ++i) {
@@ -36,16 +36,14 @@ int webserv(int argc, char** argv) {
   os.set_serverspoll_data(servers, run_server);
   // メインループを実行（複数サーバー対応版）
   run_server.run(servers);
-  //RAIIにより、サーバーのファイルディスクリプタがクローズされる
+  // RAIIにより、サーバーのファイルディスクリプタがクローズされる
   os.close_servers_fds(servers);
   for (size_t i = 0; i < servers.size(); ++i) {
     delete servers[i];
   }
-  
+
   return EXIT_SUCCESS;
 }
-
-
 
 // #include <cstdlib>
 // #include <iostream>
