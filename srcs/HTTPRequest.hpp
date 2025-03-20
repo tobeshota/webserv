@@ -11,7 +11,6 @@ class HTTPRequest {
   std::map<std::string, std::string> _headers;
   std::string _body;
   std::string _server_name;
-  std::string _port;
   bool _valid;
   bool _keepAlive;  // Keep-Alive接続かどうかを示すフラグを追加
 
@@ -31,7 +30,6 @@ class HTTPRequest {
   std::string getVersion() const { return _version; }
   std::string getBody() const { return _body; }
   std::string getServerName() const { return _server_name; }
-  std::string getPort() const { return _port; }
   const std::map<std::string, std::string>& getHeaders() const {
     return _headers;
   }
