@@ -29,7 +29,7 @@ TEST_F(HTTPRequestParserTest, BasicGetRequest) {
             "/index.html");  // Changed from getURI() to getURL()
   EXPECT_EQ(result.getVersion(), "HTTP/1.1");
   EXPECT_EQ(result.getHeaders().size(), 1);
-  EXPECT_EQ(result.getHeader("Host"), "localhost");
+  EXPECT_EQ(result.getServerName(), "localhost");
 }
 
 TEST_F(HTTPRequestParserTest, PostRequestWithBody) {
@@ -90,7 +90,7 @@ TEST_F(HTTPRequestParserTest, MultipleHeaders) {
 
   EXPECT_EQ(result.getMethod(), "GET");
   EXPECT_EQ(result.getHeaders().size(), 5);
-  EXPECT_EQ(result.getHeader("Host"), "example.com");
+  EXPECT_EQ(result.getServerName(), "example.com");
   EXPECT_EQ(result.getHeader("User-Agent"), "Mozilla/5.0");
   EXPECT_EQ(result.getHeader("Accept"), "text/html");
   EXPECT_EQ(result.getHeader("Accept-Language"), "en-US");
@@ -428,5 +428,5 @@ TEST_F(HTTPRequestParserTest, MissingHostHeaderInHttp11) {
   HTTPRequest result = parseRequest(request);
   EXPECT_EQ(result.getMethod(), "GET");
   EXPECT_EQ(result.getURL(), "/index.html");
-  EXPECT_TRUE(result.getHeader("Host").empty());
+  EXPECT_TRUE(result.getServerName().empty());
 }

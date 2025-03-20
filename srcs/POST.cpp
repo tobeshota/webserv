@@ -17,7 +17,7 @@ std::string POST::getFullPath() const {
   // ホストディレクティブからrootの値を取得
   std::string rootValue;
   const Directive* hostDirective =
-      _rootDirective.findDirective(_httpRequest.getHeader("Host"));
+      _rootDirective.findDirective(_httpRequest.getServerName());
   if (hostDirective != NULL) {
     rootValue = hostDirective->getValue("root");
   }
@@ -72,7 +72,7 @@ bool POST::hasWritePermission(const std::string& path) const {
 // リクエストボディサイズが制限内か確認する関数
 bool POST::isBodySizeAllowed(const std::string& body) const {
   const Directive* hostDirective =
-      _rootDirective.findDirective(_httpRequest.getHeader("Host"));
+      _rootDirective.findDirective(_httpRequest.getServerName());
 
   if (hostDirective != NULL) {
     std::string maxBodySizeStr =
@@ -110,7 +110,7 @@ bool POST::isPostAllowedForPath(const std::string& path) const {
 
   // ホストディレクティブを取得
   const Directive* hostDirective =
-      _rootDirective.findDirective(_httpRequest.getHeader("Host"));
+      _rootDirective.findDirective(_httpRequest.getServerName());
 
   if (hostDirective == NULL) {
     return true;  // ホストディレクティブが見つからなければデフォルトで許可
