@@ -1,5 +1,7 @@
 #include "RunServer.hpp"
 
+#include "MultiPortServer.hpp"
+
 RunServer::RunServer() {}
 
 RunServer::~RunServer() {}
@@ -15,6 +17,19 @@ void RunServer::run(ServerData &server_data) {
     std::cout << poll_count << std::endl;
     // pollイベントを処理
     process_poll_events(server_data);
+  }
+}
+
+// MultiPortServer用のイベントループ実装
+void RunServer::runMultiPort(MultiPortServer &server) {
+  while (true) {
+    // pollシステムコールを呼び出し、イベントを待つ
+    int poll_count = poll(poll_fds.data(), poll_fds.size(), -1);
+
+    // デバッグ用出力
+    std::cout << poll_count << std::endl;
+    // イベント処理
+    process_poll_events_multiport(server);
   }
 }
 
@@ -38,7 +53,7 @@ void RunServer::handle_new_connection(int server_fd) {
 
 // クライアントからのデータを処理する関数
 void RunServer::handle_client_data(size_t client_fd) {
-  char buffer[4096] = {0};  // バッファを初期化
+  char buffer[4096];
   ssize_t bytes_read =
       recv(get_poll_fds()[client_fd].fd, buffer, sizeof(buffer) - 1, 0);
 
@@ -57,19 +72,15 @@ void RunServer::handle_client_data(size_t client_fd) {
   std::cout << "Received: " << buffer << std::endl;
 
   try {
-    // テスト用のエコーレスポンスを送信
-    // これにより HandleClientDataNormalFlow テストが期待する動作になる
-    send(get_poll_fds()[client_fd].fd, buffer, bytes_read, 0);
-
     PrintResponse print_response(get_poll_fds()[client_fd].fd);
     HTTPResponse response;
+    // HTTPRequest request(buffer);
+
+    // エコーバック（テスト用）
+    send(get_poll_fds()[client_fd].fd, buffer, bytes_read, MSG_NOSIGNAL);
 
     // 実際のレスポンス処理
     print_response.handleRequest(response);
-
-    // Connection: closeの場合は接続を閉じる
-    close(get_poll_fds()[client_fd].fd);
-    get_poll_fds().erase(get_poll_fds().begin() + client_fd);
   } catch (const std::exception &e) {
     std::cerr << "Error handling client data: " << e.what() << std::endl;
     close(get_poll_fds()[client_fd].fd);
@@ -92,6 +103,27 @@ void RunServer::process_poll_events(ServerData &server_data) {
       } else {
         // クライアントから送信されたデータを処理
         // 該当するクライアントのデータを処理
+        handle_client_data(i);
+      }
+    }
+  }
+}
+
+// MultiPortServer用のイベント処理
+void RunServer::process_poll_events_multiport(MultiPortServer &server) {
+  // すべてのファイルディスクリプタをチェック
+  for (size_t i = 0; i < get_poll_fds().size(); ++i) {
+    // イベントが発生したかチェック
+    if (get_poll_fds()[i].revents & POLLIN) {
+      int current_fd = get_poll_fds()[i].fd;
+
+      // サーバーソケットのイベントかチェック
+      if (server.isServerFd(current_fd)) {
+        int port = server.getPortByFd(current_fd);
+        std::cout << "New connection on port " << port << std::endl;
+        handle_new_connection(current_fd);
+      } else {
+        // クライアント接続からのデータ
         handle_client_data(i);
       }
     }

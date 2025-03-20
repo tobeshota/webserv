@@ -1,32 +1,40 @@
 #pragma once
 
 #include <poll.h>
-#include <sys/socket.h>
 #include <unistd.h>
 
+#include <cstddef>
 #include <iostream>
+#include <string>
 #include <vector>
 
-#include "DeleteClientMethod.hpp"
-#include "HTTPRequestParser.hpp"
 #include "HTTPResponse.hpp"
 #include "PrintResponse.hpp"
 #include "ServerData.hpp"
+
+// 前方宣言（循環参照を防ぐため）
+class MultiPortServer;
 
 class RunServer {
  private:
   std::vector<pollfd> poll_fds;
 
  public:
-  RunServer(/* args */);
+  RunServer();
   ~RunServer();
+  std::vector<pollfd> &get_poll_fds();
 
   void run(ServerData &server_data);
+
+  // MultiPortServer対応の関数
+  void runMultiPort(MultiPortServer &server);
+
   void add_poll_fd(pollfd poll_fd);
-  std::vector<pollfd> &get_poll_fds();
-  void close_server_fd();
+  void handle_new_connection(int server_fd);
+  void handle_client_data(size_t client_fd);
 
   void process_poll_events(ServerData &server_data);
-  void handle_new_connection(int server_fd);
-  void handle_client_data(size_t i);
+
+  // MultiPortServer対応のイベント処理
+  void process_poll_events_multiport(MultiPortServer &server);
 };

@@ -4,7 +4,6 @@ OSInit::OSInit() {}
 
 OSInit::~OSInit() {}
 
-// サーバーを構築する
 void OSInit::initServer(ServerData &server_data) {
   // サーバーの構築
   server_data.set_address_data();
@@ -12,7 +11,8 @@ void OSInit::initServer(ServerData &server_data) {
   server_data.server_bind();
   server_data.server_listen();
 
-  std::cout << "Startup complete!, Start-up completed!" << std::endl;
+  std::cout << "Server initialized on port " << server_data.get_port()
+            << std::endl;
 }
 
 // サーバーのファイルディスクリプタを poll システムコールで監視するための設定

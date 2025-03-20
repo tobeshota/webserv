@@ -27,6 +27,8 @@ class IServerFunctions {
   const virtual struct sockaddr_in& get_address() const = 0;
   virtual int get_addrlen() const = 0;
   virtual void set_new_socket(int new_socket) = 0;
+  virtual int get_port() const = 0;
+  virtual void set_port(int port) = 0;
 };
 
 class ServerData : public IServerFunctions {
@@ -35,9 +37,11 @@ class ServerData : public IServerFunctions {
   int new_socket;
   struct sockaddr_in address;
   int addrlen;
+  int port;  // ポート番号を保持する変数を追加
 
  public:
   ServerData();
+  ServerData(int port);  // ポート番号を指定するコンストラクタを追加
   ~ServerData();
   void set_address_data();
   void set_server_fd();
@@ -49,4 +53,6 @@ class ServerData : public IServerFunctions {
   const struct sockaddr_in& get_address() const;
   int get_addrlen() const;
   void set_new_socket(int new_socket);
+  int get_port() const;     // ポート番号を取得するメソッド
+  void set_port(int port);  // ポート番号を設定するメソッド
 };
