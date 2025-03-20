@@ -6,7 +6,24 @@ RunServer::~RunServer() {}
 
 std::vector<pollfd> &RunServer::get_poll_fds() { return poll_fds; }
 
-// メインループを実行する関数
+// サーバーFDとServerDataオブジェクトのマッピングを追加
+void RunServer::add_server_mapping(int server_fd, ServerData* server) {
+  server_mappings[server_fd] = server;
+}
+
+// メインループを実行する関数（複数サーバー対応）
+void RunServer::run(std::vector<ServerData*> &servers) {
+  while (true) {
+    // pollシステムコールを呼び出し、イベントを待つ
+    int poll_count = poll(poll_fds.data(), poll_fds.size(), -1);
+    // デバッグ用にpoll_countを出力
+    std::cout << poll_count << std::endl;
+    // pollイベントを処理
+    process_poll_events(servers);
+  }
+}
+
+// 単一サーバー対応のrun関数（既存コードの補完）
 void RunServer::run(ServerData &server_data) {
   while (true) {
     // pollシステムコールを呼び出し、イベントを待つ
@@ -77,9 +94,35 @@ void RunServer::handle_client_data(size_t client_fd) {
   }
 }
 
-// pollにより、イベント発生してからforをするので、busy-waitではない
-//  pollイベントを処理する関数。ポーリングだけど、「イベントが来るまで待機する」ので
-//  busy-wait ではない
+// pollイベントを処理する関数（複数サーバー対応）
+void RunServer::process_poll_events(std::vector<ServerData*> &servers) {
+  // 監視対象のファイルディスクリプタ（pollfdリスト）をループでチェック
+  for (size_t i = 0; i < get_poll_fds().size(); ++i) {
+    // pollfd構造体のreventsにPOLLIN（読み込み可能イベント）がセットされている場合
+    if (get_poll_fds()[i].revents & POLLIN) {
+      int current_fd = get_poll_fds()[i].fd;
+      
+      // このファイルディスクリプタがサーバーのものかチェック
+      bool is_server = false;
+      for (size_t j = 0; j < servers.size(); ++j) {
+        if (current_fd == servers[j]->get_server_fd()) {
+          // 新しい接続を受け入れる処理を実行
+          handle_new_connection(current_fd);
+          is_server = true;
+          break;
+        }
+      }
+      
+      // サーバーFDでない場合はクライアント接続として処理
+      if (!is_server) {
+        // クライアントから送信されたデータを処理
+        handle_client_data(i);
+      }
+    }
+  }
+}
+
+// 単一サーバー対応のprocess_poll_events関数（既存コードの補完）
 void RunServer::process_poll_events(ServerData &server_data) {
   // 監視対象のファイルディスクリプタ（pollfdリスト）をループでチェック
   for (size_t i = 0; i < get_poll_fds().size(); ++i) {
