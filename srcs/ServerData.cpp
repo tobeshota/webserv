@@ -1,7 +1,10 @@
 #include "ServerData.hpp"
 
 ServerData::ServerData()
-    : server_fd(-1), new_socket(0), addrlen(sizeof(address)) {}
+    : server_fd(-1), new_socket(0), addrlen(sizeof(address)), port(PORT) {}
+
+ServerData::ServerData(int port)
+    : server_fd(-1), new_socket(0), addrlen(sizeof(address)), port(port) {}
 
 ServerData::~ServerData() {}
 
@@ -10,9 +13,14 @@ void ServerData::set_address_data() {
   address.sin_family = AF_INET;  // IPv4アドレスファミリーを指定
   address.sin_addr.s_addr =
       INADDR_ANY;  // 全てのローカルインターフェースにバインド（バインドとは、ソケットをアドレスに関連付けること）
-  // ここにwebserv.confで指定されたポート番号を入れる。PORTは仮
-  address.sin_port = htons(PORT);  // ポート番号を設定
+  // 設定されたポート番号を使用
+  address.sin_port = htons(port);
 }
+
+// ポート番号の取得と設定メソッドを追加
+int ServerData::get_port() const { return port; }
+
+void ServerData::set_port(int port) { this->port = port; }
 
 void ServerData::set_server_fd() {
   // ソケットの作成

@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <string>
+#include <vector>
 
 #include "RunServer.hpp"
 #include "ServerData.hpp"
@@ -12,11 +13,13 @@
 // webserv.conf指定のポート番号でのリッスンを受け付ける
 class OSInit {
  public:
-  OSInit(/* args */);
+  OSInit();
   ~OSInit();
-  // サーバーを構築する
+
   void initServer(ServerData &server_data);
+
   virtual void set_serverpoll_data(ServerData &server_data,
                                    RunServer &run_server);
+
   void close_server_fd(ServerData &server_data);
 };

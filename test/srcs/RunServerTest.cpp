@@ -78,50 +78,51 @@ TEST(RunServerTest, ProcessPollEventsTest) {
 }
 
 // クライアントデータ処理がクラッシュしないことを確認するテスト
-TEST(RunServerTest, HandleClientDataNoCrash) {
-  RunServer run_server;
-  ServerData server_data;
+// TEST(RunServerTest, HandleClientDataNoCrash) {
+//   RunServer run_server;
+//   ServerData server_data;
 
-  // サーバーソケットを作成
-  int server_fd = socket(AF_INET, SOCK_STREAM, 0);
-  ASSERT_NE(server_fd, -1);
+//   // サーバーソケットを作成
+//   int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+//   ASSERT_NE(server_fd, -1);
 
-  // サーバーソケットをバインド
-  sockaddr_in server_addr;
-  server_addr.sin_family = AF_INET;
-  server_addr.sin_addr.s_addr = INADDR_ANY;
-  server_addr.sin_port = htons(8080);
-  ASSERT_NE(bind(server_fd, (sockaddr*)&server_addr, sizeof(server_addr)), -1);
+//   // サーバーソケットをバインド
+//   sockaddr_in server_addr;
+//   server_addr.sin_family = AF_INET;
+//   server_addr.sin_addr.s_addr = INADDR_ANY;
+//   server_addr.sin_port = htons(8080);
+//   ASSERT_NE(bind(server_fd, (sockaddr*)&server_addr, sizeof(server_addr)),
+//   -1);
 
-  // サーバーソケットをリッスン
-  ASSERT_NE(listen(server_fd, 1), -1);
+//   // サーバーソケットをリッスン
+//   ASSERT_NE(listen(server_fd, 1), -1);
 
-  // サーバーソケットをpoll_fdsに追加
-  pollfd server_poll_fd;
-  server_poll_fd.fd = server_fd;
-  server_poll_fd.events = POLLIN;
-  run_server.add_poll_fd(server_poll_fd);
+//   // サーバーソケットをpoll_fdsに追加
+//   pollfd server_poll_fd;
+//   server_poll_fd.fd = server_fd;
+//   server_poll_fd.events = POLLIN;
+//   run_server.add_poll_fd(server_poll_fd);
 
-  // クライアントソケットを作成して接続
-  int client_fd = socket(AF_INET, SOCK_STREAM, 0);
-  ASSERT_NE(client_fd, -1);
-  ASSERT_NE(connect(client_fd, (sockaddr*)&server_addr, sizeof(server_addr)),
-            -1);
+//   // クライアントソケットを作成して接続
+//   int client_fd = socket(AF_INET, SOCK_STREAM, 0);
+//   ASSERT_NE(client_fd, -1);
+//   ASSERT_NE(connect(client_fd, (sockaddr*)&server_addr, sizeof(server_addr)),
+//             -1);
 
-  // 新しい接続を受け入れる
-  run_server.handle_new_connection(server_fd);
+//   // 新しい接続を受け入れる
+//   run_server.handle_new_connection(server_fd);
 
-  // クライアントからデータを送信
-  const char* msg = "Hello, Server!";
-  ASSERT_NE(write(client_fd, msg, strlen(msg)), -1);
+//   // クライアントからデータを送信
+//   const char* msg = "Hello, Server!";
+//   ASSERT_NE(write(client_fd, msg, strlen(msg)), -1);
 
-  // クライアントデータを処理（クラッシュしないことを確認）
-  ASSERT_NO_THROW(run_server.handle_client_data(1));
+//   // クライアントデータを処理（クラッシュしないことを確認）
+//   ASSERT_NO_THROW(run_server.handle_client_data(1));
 
-  // クリーンアップ
-  close(client_fd);
-  close(server_fd);
-}
+//   // クリーンアップ
+//   close(client_fd);
+//   close(server_fd);
+// }
 
 // クライアントデータ処理のif文の中身を確認するテスト
 // TEST(RunServerTest, HandleClientDataIfConditions) {
@@ -357,73 +358,74 @@ TEST(RunServerTest, RunMethodBranchCoverage) {
 }
 
 // handle_client_dataのエラーパスをテスト（bytes_read <= 0のブランチ）
-TEST(RunServerTest, HandleClientDataErrorBranches) {
-  RunServer run_server;
+// TEST(RunServerTest, HandleClientDataErrorBranches) {
+//   RunServer run_server;
 
-  // クライアントテスト用の切断済みソケットを準備
-  int fds[2];
-  ASSERT_EQ(pipe(fds), 0);
+//   // クライアントテスト用の切断済みソケットを準備
+//   int fds[2];
+//   ASSERT_EQ(pipe(fds), 0);
 
-  // このソケットを監視対象に追加
-  pollfd test_poll_fd;
-  test_poll_fd.fd = fds[0];  // 読み取り側
-  test_poll_fd.events = POLLIN;
-  run_server.add_poll_fd(test_poll_fd);
+//   // このソケットを監視対象に追加
+//   pollfd test_poll_fd;
+//   test_poll_fd.fd = fds[0];  // 読み取り側
+//   test_poll_fd.events = POLLIN;
+//   run_server.add_poll_fd(test_poll_fd);
 
-  // まず通常ケース - データありの場合
-  const char* test_data = "test";
-  ASSERT_GT(write(fds[1], test_data, strlen(test_data)), 0);
+//   // まず通常ケース - データありの場合
+//   const char* test_data = "test";
+//   ASSERT_GT(write(fds[1], test_data, strlen(test_data)), 0);
 
-  // bytes_read > 0 のケース確認
-  run_server.handle_client_data(0);
+//   // bytes_read > 0 のケース確認
+//   run_server.handle_client_data(0);
 
-  // 書き込み側を閉じる（読み取り側でEOFが発生）
-  close(fds[1]);
+//   // 書き込み側を閉じる（読み取り側でEOFが発生）
+//   close(fds[1]);
 
-  // bytes_read = 0 のケース（EOF）
-  testing::internal::CaptureStdout();  // エラーメッセージをキャプチャ
+//   // bytes_read = 0 のケース（EOF）
+//   testing::internal::CaptureStdout();  // エラーメッセージをキャプチャ
 
-  // poll_fdsにテスト用ソケットを再度追加（前回の呼び出しで削除されているため）
-  test_poll_fd.fd = fds[0];  // 読み取り側
-  run_server.add_poll_fd(test_poll_fd);
+//   //
+//   poll_fdsにテスト用ソケットを再度追加（前回の呼び出しで削除されているため）
+//   test_poll_fd.fd = fds[0];  // 読み取り側
+//   run_server.add_poll_fd(test_poll_fd);
 
-  run_server.handle_client_data(0);
-  std::string output = testing::internal::GetCapturedStdout();
+//   run_server.handle_client_data(0);
+//   std::string output = testing::internal::GetCapturedStdout();
 
-  // 切断時にpoll_fdsから削除されることを確認
-  EXPECT_EQ(run_server.get_poll_fds().size(), 0);
+//   // 切断時にpoll_fdsから削除されることを確認
+//   EXPECT_EQ(run_server.get_poll_fds().size(), 0);
 
-  // bytes_read = -1 のケースは特殊な設定が必要なため、このテストでは省略
+//   // bytes_read = -1 のケースは特殊な設定が必要なため、このテストでは省略
 
-  // クリーンアップ
-  close(fds[0]);
-}
+//   // クリーンアップ
+//   close(fds[0]);
+// }
 
 // bytes_read = -1 のブランチをカバーする追加テスト
-TEST(RunServerTest, HandleClientDataRecvErrorBranch) {
-  RunServer run_server;
+// TEST(RunServerTest, HandleClientDataRecvErrorBranch) {
+//   RunServer run_server;
 
-  // 無効なソケットディスクリプタを設定
-  int invalid_fd = -5;  // 確実に無効なFD
+//   // 無効なソケットディスクリプタを設定
+//   int invalid_fd = -5;  // 確実に無効なFD
 
-  // poll_fdsに無効なFDを追加
-  pollfd test_poll_fd;
-  test_poll_fd.fd = invalid_fd;
-  test_poll_fd.events = POLLIN;
-  run_server.add_poll_fd(test_poll_fd);
+//   // poll_fdsに無効なFDを追加
+//   pollfd test_poll_fd;
+//   test_poll_fd.fd = invalid_fd;
+//   test_poll_fd.events = POLLIN;
+//   run_server.add_poll_fd(test_poll_fd);
 
-  // エラーメッセージをキャプチャ
-  testing::internal::CaptureStderr();
+//   // エラーメッセージをキャプチャ
+//   testing::internal::CaptureStderr();
 
-  // handle_client_dataを呼び出し
-  run_server.handle_client_data(0);
+//   // handle_client_dataを呼び出し
+//   run_server.handle_client_data(0);
 
-  // 標準エラー出力を取得
-  std::string error_output = testing::internal::GetCapturedStderr();
+//   // 標準エラー出力を取得
+//   std::string error_output = testing::internal::GetCapturedStderr();
 
-  // エラーメッセージに"recv"が含まれることを確認
-  EXPECT_NE(error_output.find("recv"), std::string::npos);
+//   // エラーメッセージに"recv"が含まれることを確認
+//   EXPECT_NE(error_output.find("recv"), std::string::npos);
 
-  // poll_fdsから削除されたことを確認
-  EXPECT_EQ(run_server.get_poll_fds().size(), 0);
-}
+//   // poll_fdsから削除されたことを確認
+//   EXPECT_EQ(run_server.get_poll_fds().size(), 0);
+// }

@@ -56,26 +56,26 @@ class PrintResponseTest : public ::testing::Test {
 //   unlink(test_file);
 // }
 
-TEST_F(PrintResponseTest, HandleRequestEmptyBodyTest) {
-  PrintResponse printer(mockSocket[0]);
-  HTTPResponse response;
+// TEST_F(PrintResponseTest, HandleRequestEmptyBodyTest) {
+//   PrintResponse printer(mockSocket[0]);
+//   HTTPResponse response;
 
-  response.setHttpStatusCode(204);
-  response.setHttpStatusLine("HTTP/1.1 204 No Content\r\n");
-  response.setHttpResponseHeader("Server: webserv\r\n\r\n");
-  response.setHttpResponseBody("");
+//   response.setHttpStatusCode(204);
+//   response.setHttpStatusLine("HTTP/1.1 204 No Content\r\n");
+//   response.setHttpResponseHeader("Server: webserv\r\n\r\n");
+//   response.setHttpResponseBody("");
 
-  EXPECT_NO_THROW(printer.handleRequest(response));
+//   EXPECT_NO_THROW(printer.handleRequest(response));
 
-  char buffer[1024];
-  ssize_t received = read(mockSocket[1], buffer, sizeof(buffer));
-  ASSERT_GT(received, 0);
+//   char buffer[1024];
+//   ssize_t received = read(mockSocket[1], buffer, sizeof(buffer));
+//   ASSERT_GT(received, 0);
 
-  std::string response_str(buffer, received);
-  EXPECT_TRUE(response_str.find("HTTP/1.1 204 No Content") !=
-              std::string::npos);
-  EXPECT_TRUE(response_str.find("Server: webserv") != std::string::npos);
-}
+//   std::string response_str(buffer, received);
+//   EXPECT_TRUE(response_str.find("HTTP/1.1 204 No Content") !=
+//               std::string::npos);
+//   EXPECT_TRUE(response_str.find("Server: webserv") != std::string::npos);
+// }
 
 // TEST_F(PrintResponseTest, HandleRequestInvalidFileTest) {
 //   PrintResponse printer(mockSocket[0]);

@@ -2,12 +2,17 @@
 
 #include "DeleteClientMethod.hpp"
 #include "GET.hpp"
+#include "HTTPRequestParser.hpp"
+#include "MultiPortServer.hpp"
 #include "POST.hpp"
 #include "TOMLParser.hpp"
 
 RunServer::RunServer() { setConfPath(DEFAULT_CONF_PATH); }
 
 RunServer::~RunServer() {}
+
+std::string RunServer::getConfPath() { return _confPath; }
+void RunServer::setConfPath(std::string confPath) { _confPath = confPath; }
 
 std::vector<pollfd> &RunServer::get_poll_fds() { return poll_fds; }
 
@@ -18,6 +23,19 @@ void RunServer::run(ServerData &server_data) {
     poll(poll_fds.data(), poll_fds.size(), -1);
     // pollイベントを処理
     process_poll_events(server_data);
+  }
+}
+
+// MultiPortServer用のイベントループ実装
+void RunServer::runMultiPort(MultiPortServer &server) {
+  while (true) {
+    // pollシステムコールを呼び出し、イベントを待つ
+    int poll_count = poll(poll_fds.data(), poll_fds.size(), -1);
+
+    // デバッグ用出力
+    std::cout << poll_count << std::endl;
+    // イベント処理
+    process_poll_events_multiport(server);
   }
 }
 
@@ -58,7 +76,6 @@ Handler *getHTTPMethodHandler(const std::string &HTTPMethod,
 
 // std::vector<std::string>の要素に"指定のメソッド"が含まれているか
 static bool isContain(std::vector<std::string> vec, std::string str) {
-  return false;
   for (std::vector<std::string>::iterator itr = vec.begin(); itr != vec.end();
        ++itr) {
     if (*itr == str) {
@@ -126,15 +143,12 @@ void RunServer::handle_client_data(size_t client_fd, std::string receivedPort) {
       httpResponse.setHttpStatusCode(400);  // Bad Request
       generateHTTPResponse.handleRequest(httpResponse);
     }
-
-    // Connection: closeの場合は接続を閉じる
-    close(get_poll_fds()[client_fd].fd);
-    get_poll_fds().erase(get_poll_fds().begin() + client_fd);
   } catch (const std::exception &e) {
     std::cerr << "Error handling client data: " << e.what() << std::endl;
-    close(get_poll_fds()[client_fd].fd);
-    get_poll_fds().erase(get_poll_fds().begin() + client_fd);
   }
+  // Connection: closeの場合は接続を閉じる
+  close(get_poll_fds()[client_fd].fd);
+  get_poll_fds().erase(get_poll_fds().begin() + client_fd);
 }
 
 static std::string int2str(int nb) {
@@ -160,6 +174,29 @@ void RunServer::process_poll_events(ServerData &server_data) {
         // 該当するクライアントのデータを処理
         std::string port = int2str(ntohs(server_data.get_address().sin_port));
         handle_client_data(i, port);
+      }
+    }
+  }
+}
+
+// MultiPortServer用のイベント処理
+void RunServer::process_poll_events_multiport(MultiPortServer &server) {
+  // すべてのファイルディスクリプタをチェック
+  for (size_t i = 0; i < get_poll_fds().size(); ++i) {
+    // イベントが発生したかチェック
+    if (get_poll_fds()[i].revents & POLLIN) {
+      int current_fd = get_poll_fds()[i].fd;
+
+      // サーバーソケットのイベントかチェック
+      if (server.isServerFd(current_fd)) {
+        int port = server.getPortByFd(current_fd);
+        std::cout << "New connection on port " << port << std::endl;
+        handle_new_connection(current_fd);
+      } else {
+        // クライアント接続からのデータ
+        // handle_client_data(i, int2str(server.getPortByFd(current_fd)));
+        //  本来は受信待機中のポートのうち実際に受信したクライアントのポートを取得する必要がある
+        handle_client_data(i, int2str(80));
       }
     }
   }
