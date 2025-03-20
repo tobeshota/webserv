@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-#define PORT 8080
+#define PORT 80  //  confからとってくるべき
 #define MAX_CONNECTION 3
 
 class IServerFunctions {
