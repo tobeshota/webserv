@@ -38,7 +38,6 @@ std::string readFile(const std::string& filePath) {
 std::string GenerateHTTPResponse::generateHttpResponseHeader(
     const std::string& httpResponseBody) {
   std::string httpResponseHeader = "Server: webserv\n";
-  // httpResponseHeader += "Date: " + getCurrentTimeInGMTFormat() + "\n";
   httpResponseHeader += "Content-Type: text/html\n";
   httpResponseHeader +=
       "Content-Length: " + int2str(httpResponseBody.size()) + "\n";
