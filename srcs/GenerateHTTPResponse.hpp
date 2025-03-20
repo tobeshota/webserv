@@ -21,10 +21,10 @@ class GenerateHTTPResponse : public Handler {
   // utils
   std::string getPathForHttpResponseBody(const int status_code);
   std::string getDirectiveValue(std::string directiveKey);
-  std::vector<std::string> getDirectiveValues(std::string directiveKey);
 
  public:
   GenerateHTTPResponse(Directive rootDirective, HTTPRequest httpRequest);
+  std::vector<std::string> getDirectiveValues(std::string directiveKey);
 
   void handleRequest(HTTPResponse& httpResponse);
 };
