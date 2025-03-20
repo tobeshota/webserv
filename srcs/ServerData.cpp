@@ -20,6 +20,12 @@ void ServerData::set_server_fd() {
     perror("socket failed");
     exit(EXIT_FAILURE);
   }
+  // ソケットの再利用を許可する設定を追加
+  int opt = 1;
+  if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+    perror("setsockopt failed");
+    exit(EXIT_FAILURE);
+  }
 }
 
 void ServerData::server_bind() {
