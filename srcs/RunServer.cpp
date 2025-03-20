@@ -3,6 +3,7 @@
 #include "DeleteClientMethod.hpp"
 #include "GET.hpp"
 #include "POST.hpp"
+#include "TOMLParser.hpp"
 
 RunServer::RunServer() { setConfPath(DEFAULT_CONF_PATH); }
 
@@ -55,9 +56,20 @@ Handler *getHTTPMethodHandler(const std::string &HTTPMethod,
   }
 }
 
-#include "TOMLParser.hpp"
+// std::vector<std::string>の要素に"指定のメソッド"が含まれているか
+static bool isContain(std::vector<std::string> vec, std::string str) {
+  return false;
+  for (std::vector<std::string>::iterator itr = vec.begin(); itr != vec.end();
+       ++itr) {
+    if (*itr == str) {
+      return true;
+    }
+  }
+  return false;
+}
+
 // クライアントからのデータを処理する関数
-void RunServer::handle_client_data(size_t client_fd) {
+void RunServer::handle_client_data(size_t client_fd, std::string receivedPort) {
   char buffer[4096] = {0};  // バッファを初期化
   ssize_t bytes_read =
       recv(get_poll_fds()[client_fd].fd, buffer, sizeof(buffer) - 1, 0);
@@ -95,14 +107,25 @@ void RunServer::handle_client_data(size_t client_fd) {
     HTTPResponse httpResponse;
 
     // 鎖をつなげる
-    Handler *handler = getHTTPMethodHandler(httpRequest.getMethod(),
-                                            *rootDirective, httpRequest);
-    GenerateHTTPResponse generateHTTPResponse(*rootDirective, httpRequest);
     PrintResponse printResponse(get_poll_fds()[client_fd].fd);
-    handler->setNextHandler(&generateHTTPResponse);
+    GenerateHTTPResponse generateHTTPResponse(*rootDirective, httpRequest);
     generateHTTPResponse.setNextHandler(&printResponse);
-    handler->handleRequest(httpResponse);
-    delete handler;
+
+    // 指定ホストは指定のポートをリッスンするか
+    std::string host = httpRequest.getServerName();
+    const Directive *hostDirective = rootDirective->findDirective(host);
+    std::vector<std::string> hostReveivablePorts =
+        hostDirective->getValues("listen");
+    if (isContain(hostReveivablePorts, receivedPort)) {
+      Handler *handler = getHTTPMethodHandler(httpRequest.getMethod(),
+                                              *rootDirective, httpRequest);
+      handler->setNextHandler(&generateHTTPResponse);
+      handler->handleRequest(httpResponse);
+      delete handler;
+    } else {
+      httpResponse.setHttpStatusCode(400);  // Bad Request
+      generateHTTPResponse.handleRequest(httpResponse);
+    }
 
     // Connection: closeの場合は接続を閉じる
     close(get_poll_fds()[client_fd].fd);
@@ -112,6 +135,12 @@ void RunServer::handle_client_data(size_t client_fd) {
     close(get_poll_fds()[client_fd].fd);
     get_poll_fds().erase(get_poll_fds().begin() + client_fd);
   }
+}
+
+static std::string int2str(int nb) {
+  std::stringstream ss;
+  ss << nb;
+  return ss.str();
 }
 
 // pollにより、イベント発生してからforをするので、busy-waitではない
@@ -129,7 +158,8 @@ void RunServer::process_poll_events(ServerData &server_data) {
       } else {
         // クライアントから送信されたデータを処理
         // 該当するクライアントのデータを処理
-        handle_client_data(i);
+        std::string port = int2str(ntohs(server_data.get_address().sin_port));
+        handle_client_data(i, port);
       }
     }
   }

@@ -29,7 +29,7 @@ class RunServer {
 
   void process_poll_events(ServerData &server_data);
   void handle_new_connection(int server_fd);
-  void handle_client_data(size_t i);
+  void handle_client_data(size_t i, std::string port);
 
   void setConfPath(std::string path) { _confPath = path; }
   std::string getConfPath() { return _confPath; }
