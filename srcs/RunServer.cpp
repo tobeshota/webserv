@@ -182,7 +182,6 @@ void RunServer::process_poll_events(ServerData &server_data) {
   }
 }
 
-
 // MultiPortServer用のイベント処理
 void RunServer::process_poll_events_multiport(MultiPortServer &server) {
   // pollfd構造体のreventsにPOLLIN（読み込み可能イベント）がセットされている場合
@@ -197,7 +196,7 @@ void RunServer::process_poll_events_multiport(MultiPortServer &server) {
       } else {
         // マップから保存したポート情報を取得
         int server_port = client_to_port[current_fd];
-        handle_client_data(i, std::to_string(server_port));
+        handle_client_data(i, int2str(server_port));
       }
     }
   }
