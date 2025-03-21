@@ -27,6 +27,9 @@ bool GET::fileExists(const std::string& filePath) {
   if (isDirectory(filePath)) {
     GenerateHTTPResponse searchIndexValue(_rootDirective, _httpRequest);
     std::string index = searchIndexValue.getDirectiveValue("index");
+    if (index.empty()) {
+      index = "index.html";
+    }
     filePathWithIndex +=
         (filePathWithIndex.end()[-1] == '/') ? index : "/" + index;
   }
