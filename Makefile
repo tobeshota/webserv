@@ -33,6 +33,10 @@ ifeq ($(MAKECMDGOALS), address)
 	FLAGS += -g3 -fsanitize=address
 endif
 
+ifeq ($(MAKECMDGOALS), leaks)
+	FLAGS += -g3 -fsanitize=address -fsanitize=leak
+endif
+
 all: $(NAME)
 
 $(NAME): $(OBJS)
@@ -71,6 +75,11 @@ debug: re
 
 address: re
 
+leaks: re
+	@echo "\033[1;33mRunning with LeakSanitizer...\033[0m"
+	@echo "\033[0;34mNote: Export ASAN_OPTIONS=detect_leaks=1 before running the program\033[0m"
+	@echo "Example: ASAN_OPTIONS=detect_leaks=1 ./$(NAME)"
+
 test:
 	@ make test -C test/
 
@@ -80,4 +89,4 @@ coverage:
 doc:
 	make doc -C docs/ -f doc.mk
 
-.PHONY:	all clean fclean re up run down fmt debug address test coverage doc
+.PHONY:	all clean fclean re up run down fmt debug address test coverage doc leaks
