@@ -12,10 +12,27 @@ static bool endsWith(const std::string& str, const std::string& suffix) {
          str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
 }
 
+// filePathがサーバー上に存在するディレクトリかどうかを調べる
+static bool isDirectory(const std::string& filePath) {
+  struct stat st;
+  if (stat(filePath.c_str(), &st) != 0) {
+    return false;
+  }
+  return S_ISDIR(st.st_mode);
+}
+
 // ファイルが存在するか確認する関数
-static bool fileExists(const std::string& filePath) {
+bool GET::fileExists(const std::string& filePath) {
+  std::string filePathWithIndex = filePath;
+  if (isDirectory(filePath)) {
+    GenerateHTTPResponse searchIndexValue(_rootDirective, _httpRequest);
+    std::string index = searchIndexValue.getDirectiveValue("index");
+    filePathWithIndex +=
+        (filePathWithIndex.end()[-1] == '/') ? index : "/" + index;
+  }
+
   struct stat buffer;
-  return (stat(filePath.c_str(), &buffer) == 0);
+  return (stat(filePathWithIndex.c_str(), &buffer) == 0);
 }
 
 // ファイルが読み取り可能か確認する関数

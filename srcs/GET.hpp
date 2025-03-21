@@ -15,6 +15,7 @@ class GET : public Handler {
   // HTTPステータスコードを設定する関数
   void setHttpStatusCode(HTTPResponse& httpResponse,
                          const std::string& fullPath);
+  bool fileExists(const std::string& filePath);
 
  public:
   GET(Directive rootDirective, HTTPRequest httpRequest);
