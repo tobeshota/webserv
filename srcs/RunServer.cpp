@@ -110,25 +110,38 @@ void RunServer::handle_client_data(size_t client_fd, std::string receivedPort) {
     // HTTPレスポンスオブジェクトを作成
     HTTPResponse httpResponse;
 
+    // URLリダイレクトが指定されている場合，httpRequestのURLをリダイレクト先に変更する
+    // URLリダイレクトとはすなわち，HTTPリクエストのURLを変更することであるため．
+    GenerateHTTPResponse search(*rootDirective, httpRequest);
+    if (search.getDirectiveValue("return") != "") {
+      httpRequest.setURL(search.getDirectiveValue("return"));
+    }
+
     // 鎖をつなげる
     PrintResponse printResponse(get_poll_fds()[client_fd].fd);
     GenerateHTTPResponse generateHTTPResponse(*rootDirective, httpRequest);
     generateHTTPResponse.setNextHandler(&printResponse);
 
-    // 指定ホストは指定のポートをリッスンするか
     std::string host = httpRequest.getServerName();
     const Directive *hostDirective = rootDirective->findDirective(host);
     std::vector<std::string> hostReveivablePorts =
         hostDirective->getValues("listen");
-    if (isContain(hostReveivablePorts, receivedPort)) {
+    if (!isContain(hostReveivablePorts, receivedPort)) {
+      // 指定ホストは指定のポートをリッスンしない場合
+      httpResponse.setHttpStatusCode(400);  // Bad Request
+      generateHTTPResponse.handleRequest(httpResponse);
+    } else if (isContain(search.getDirectiveValues("deny"),
+                         httpRequest.getMethod())) {
+      // 実行メソッドが許可されていない場合
+      httpResponse.setHttpStatusCode(405);  // Method Not Allowed
+      generateHTTPResponse.handleRequest(httpResponse);
+    } else {
+      // 通常
       Handler *handler = getHTTPMethodHandler(httpRequest.getMethod(),
                                               *rootDirective, httpRequest);
       handler->setNextHandler(&generateHTTPResponse);
       handler->handleRequest(httpResponse);
       delete handler;
-    } else {
-      httpResponse.setHttpStatusCode(400);  // Bad Request
-      generateHTTPResponse.handleRequest(httpResponse);
     }
   } catch (const std::exception &e) {
     std::cerr << "Error handling client data: " << e.what() << std::endl;
