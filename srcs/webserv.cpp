@@ -7,6 +7,17 @@
 #include "RunServer.hpp"  // 明示的にインクルード
 #include "TOMLParser.hpp"
 
+// stoiの再実装．string型の文字列を数値として読み取り，int型の値に変換する
+static int	string_to_int(const std::string str)
+{
+	int	result;
+
+	std::istringstream iss(str);
+	if (!(iss >> result))
+		return (-1);
+	return (result);
+}
+
 //// 複数のポートを用意（本来はconfファイルから取得）の関数を作る
 std::vector<int> getPorts() {
   std::vector<int> ports;
@@ -26,7 +37,7 @@ std::vector<int> getPorts() {
               << std::endl;
     for (size_t i = 0; i < listen_directives.size(); ++i) {
       std::string port_str = listen_directives[i];
-      int port = std::stoi(port_str);
+      int port = string_to_int(port_str);
       ports.push_back(port);
     }
   } catch (const std::exception& e) {
