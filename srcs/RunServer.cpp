@@ -43,13 +43,16 @@ void RunServer::runMultiPort(MultiPortServer &server) {
 void RunServer::add_poll_fd(pollfd poll_fd) { poll_fds.push_back(poll_fd); }
 
 // 新しい接続を処理する関数
-void RunServer::handle_new_connection(int server_fd) {
+void RunServer::handle_new_connection(int server_fd, int server_port) {
   int new_socket = accept(server_fd, NULL, NULL);
   if (new_socket == -1) {
     perror("accept");
     return;
   }
-  std::cout << "New connection accepted" << std::endl;
+  std::cout << "New connection accepted on port " << server_port << std::endl;
+
+  // クライアントFDとサーバーポートの対応を保存
+  client_to_port[new_socket] = server_port;
 
   pollfd client_fd_poll;
   client_fd_poll.fd = new_socket;
@@ -179,24 +182,22 @@ void RunServer::process_poll_events(ServerData &server_data) {
   }
 }
 
+
 // MultiPortServer用のイベント処理
 void RunServer::process_poll_events_multiport(MultiPortServer &server) {
-  // すべてのファイルディスクリプタをチェック
+  // pollfd構造体のreventsにPOLLIN（読み込み可能イベント）がセットされている場合
   for (size_t i = 0; i < get_poll_fds().size(); ++i) {
-    // イベントが発生したかチェック
+    // サーバーのファイルディスクリプタがイベントを発生させた場合
     if (get_poll_fds()[i].revents & POLLIN) {
       int current_fd = get_poll_fds()[i].fd;
-
-      // サーバーソケットのイベントかチェック
+      // 新しい接続を受け入れる処理を実行
       if (server.isServerFd(current_fd)) {
         int port = server.getPortByFd(current_fd);
-        std::cout << "New connection on port " << port << std::endl;
-        handle_new_connection(current_fd);
+        handle_new_connection(current_fd, port);
       } else {
-        // クライアント接続からのデータ
-        // handle_client_data(i, int2str(server.getPortByFd(current_fd)));
-        //  本来は受信待機中のポートのうち実際に受信したクライアントのポートを取得する必要がある
-        handle_client_data(i, int2str(80));
+        // マップから保存したポート情報を取得
+        int server_port = client_to_port[current_fd];
+        handle_client_data(i, std::to_string(server_port));
       }
     }
   }

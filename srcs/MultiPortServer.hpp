@@ -29,9 +29,6 @@ class MultiPortServer {
   void addPort(int port);
   void setPorts(const std::vector<int>& ports);
 
-  // サーバーソケットを初期化
-  bool initializeSockets();
-
   // 各種ゲッター
   const std::vector<int>& getServerFds() const;
   const std::vector<int>& getPorts() const;
@@ -40,4 +37,7 @@ class MultiPortServer {
 
   // サーバーソケットをクローズ
   void closeSockets();
+
+  // OSInitと連携するための新しいメソッド
+  void addServerFd(int fd, int port);
 };
