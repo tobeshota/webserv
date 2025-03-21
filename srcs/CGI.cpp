@@ -16,7 +16,14 @@
 #include <sstream>
 
 CGI::CGI(Directive rootDirective, HTTPRequest httpRequest)
-    : _rootDirective(rootDirective), _httpRequest(httpRequest) {}
+    : _rootDirective(rootDirective), _httpRequest(httpRequest) {
+  // CGI_PAGEファイルが存在する場合は削除
+  std::ifstream tempFile(CGI_PAGE);
+  if (tempFile.good()) {
+    tempFile.close();
+    std::remove(CGI_PAGE);
+  }
+}
 
 CGI::~CGI() {}
 
@@ -399,6 +406,20 @@ void CGI::handleRequest(HTTPResponse& httpResponse) {
   // スクリプトパスを取得
   std::string scriptPath = getScriptPath();
 
+  // スクリプトファイルが存在するか確認（通常のファイルの場合）
+  if (!isDirectory(_httpRequest.getURL())) {
+    std::ifstream scriptFile(scriptPath.c_str());
+    if (!scriptFile.good()) {
+      // ファイルが存在しない場合は404エラー
+      httpResponse.setHttpStatusCode(404);
+      if (_nextHandler != NULL) {
+        _nextHandler->handleRequest(httpResponse);
+      }
+      return;
+    }
+    scriptFile.close();
+  }
+
   // URLがディレクトリを指している場合
   if (isDirectory(_httpRequest.getURL())) {
     // ディレクトリ内にサポートされたインデックスファイルがあるか確認
@@ -410,6 +431,18 @@ void CGI::handleRequest(HTTPResponse& httpResponse) {
     if (indexDirective != NULL) {
       std::string indexValue = indexDirective->getValue("index");
       if (!indexValue.empty() && isSupportedScript(indexValue)) {
+        // インデックスファイルが存在するか確認
+        std::ifstream indexFile((scriptPath).c_str());
+        if (!indexFile.good()) {
+          // インデックスファイルが存在しない場合
+          httpResponse.setHttpStatusCode(404);
+          if (_nextHandler != NULL) {
+            _nextHandler->handleRequest(httpResponse);
+          }
+          return;
+        }
+        indexFile.close();
+
         // サポートされたスクリプトを実行
         if (executeCGI(scriptPath) && readCGIResponse()) {
           // 成功: CGIが実行できたことを示すステータスコードを設定
@@ -421,6 +454,18 @@ void CGI::handleRequest(HTTPResponse& httpResponse) {
 
     // インデックスファイルがない場合はディレクトリリストを生成
     if (!hasIndexScript) {
+      // ディレクトリが存在するか確認
+      DIR* dir = opendir(scriptPath.c_str());
+      if (dir == NULL) {
+        // ディレクトリが存在しない場合は404エラー
+        httpResponse.setHttpStatusCode(404);
+        if (_nextHandler != NULL) {
+          _nextHandler->handleRequest(httpResponse);
+        }
+        return;
+      }
+      closedir(dir);
+
       httpResponse.setHttpStatusCode(200);
       httpResponse.setHttpResponseBody(generateDirectoryListing(scriptPath));
     }

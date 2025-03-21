@@ -252,7 +252,7 @@ TEST_F(CGITest, ScriptPathResolutionTest) {
   badCgiHandler.handleRequest(badResponse);
 
   // スクリプトが見つからないので失敗するはず
-  EXPECT_EQ(500, badResponse.getHttpStatusCode());
+  EXPECT_EQ(404, badResponse.getHttpStatusCode());
 }
 
 // CGI実行（成功）のテスト
@@ -286,8 +286,8 @@ TEST_F(CGITest, ExecuteCGIFailureTest) {
 
   cgiHandler.handleRequest(response);
 
-  // スクリプトが存在しない場合、500エラーになるはず
-  EXPECT_EQ(500, response.getHttpStatusCode());
+  // スクリプトが存在しない場合、404エラーになるはず（500から404に変更）
+  EXPECT_EQ(404, response.getHttpStatusCode());
 }
 
 // エラー終了のスクリプトテスト
@@ -444,8 +444,8 @@ TEST_F(CGITest, PathResolutionEdgeCasesTest) {
   HTTPResponse response;
   cgiHandler.handleRequest(response);
 
-  // ホストが不明な場合はroot値が取得できず、スクリプトが見つからないので失敗するはず
-  EXPECT_EQ(500, response.getHttpStatusCode());
+  // ホストが不明な場合はroot値が取得できず、スクリプトが見つからないので404になるはず
+  EXPECT_EQ(404, response.getHttpStatusCode());
 }
 
 // メソッドのパラメータ解析テスト
@@ -663,6 +663,44 @@ TEST_F(CGITest, ShellScriptDirectoryIndexTest) {
                 std::string::npos);
   }
 }
+
+// 追加：存在しないディレクトリのテスト
+TEST_F(CGITest, NonExistentDirectoryTest) {
+  Directive rootDirective = createTestDirective();
+  HTTPRequest request = createTestRequest("GET", "/nonexistent-dir/");
+
+  CGI cgiHandler(rootDirective, request);
+  HTTPResponse response;
+  cgiHandler.handleRequest(response);
+
+  // 存在しないディレクトリの場合、404エラーになるはず
+  EXPECT_EQ(404, response.getHttpStatusCode());
+}
+
+// // 追加：存在しないインデックスファイルのテスト
+// TEST_F(CGITest, NonExistentIndexTest) {
+//   // テスト用ディレクトリを作成（インデックスファイルなし）
+//   system("mkdir -p /tmp/webserv/www/empty-dir/");
+
+//   // indexがmissing.pyを指すlocationディレクティブを追加
+//   Directive rootDirective = createTestDirective();
+//   Directive hostDirective = *(rootDirective.findDirective("localhost"));
+//   Directive emptyDirLocation("location");
+//   emptyDirLocation.setName("/empty-dir/");
+//   emptyDirLocation.addKeyValue("index", "missing.py");
+//   hostDirective.addChild(emptyDirLocation);
+
+//   HTTPRequest request = createTestRequest("GET", "/empty-dir/");
+//   CGI cgiHandler(rootDirective, request);
+//   HTTPResponse response;
+//   cgiHandler.handleRequest(response);
+
+//   // インデックスファイルが存在しない場合、404エラーになるはず
+//   EXPECT_EQ(404, response.getHttpStatusCode());
+
+//   // クリーンアップ
+//   system("rm -rf /tmp/webserv/www/empty-dir/");
+// }
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
