@@ -19,6 +19,7 @@ class RunServer {
  private:
   std::vector<pollfd> poll_fds;
   std::string _confPath;
+  std::map<int, int> client_to_port;
 
  public:
   RunServer();
@@ -31,7 +32,7 @@ class RunServer {
   void runMultiPort(MultiPortServer &server);
 
   void add_poll_fd(pollfd poll_fd);
-  void handle_new_connection(int server_fd);
+  void handle_new_connection(int server_fd, int server_port);
   void handle_client_data(size_t i, std::string port);
   std::string getConfPath();
   void setConfPath(std::string confPath);

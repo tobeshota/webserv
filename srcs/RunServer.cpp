@@ -30,7 +30,7 @@ void RunServer::runMultiPort(MultiPortServer &server) {
 void RunServer::add_poll_fd(pollfd poll_fd) { poll_fds.push_back(poll_fd); }
 
 // 新しい接続を処理する関数
-void RunServer::handle_new_connection(int server_fd) {
+void RunServer::handle_new_connection(int server_fd, int server_port) {
   int new_socket = accept(server_fd, NULL, NULL);
   if (new_socket == -1) {
     perror("accept");
@@ -38,6 +38,8 @@ void RunServer::handle_new_connection(int server_fd) {
   }
   std::cout << "New connection accepted" << std::endl;
 
+  // クライアントFDとサーバーポートの対応を保存
+  client_to_port[new_socket] = server_port;
   pollfd client_fd_poll;
   client_fd_poll.fd = new_socket;
   client_fd_poll.events = POLLIN;
@@ -170,10 +172,11 @@ void RunServer::process_poll_events_multiport(MultiPortServer &server) {
       if (server.isServerFd(current_fd)) {
         int port = server.getPortByFd(current_fd);
         std::cout << "New connection on port " << port << std::endl;
-        handle_new_connection(current_fd);
+        handle_new_connection(current_fd, port);
       } else {
         // クライアント接続からのデータ
-        int server_port = server.getPortByFd(current_fd);
+        int server_port = client_to_port[current_fd];
+        std::cout << "Data received on port " << server_port << std::endl;
         handle_client_data(i, int2str(server_port));
       }
     }
