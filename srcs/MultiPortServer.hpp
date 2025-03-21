@@ -12,8 +12,6 @@
 #include <string>
 #include <vector>
 
-#define MAX_CONNECTION 3
-
 class MultiPortServer {
  private:
   std::vector<int> ports;         // 監視するポート番号のリスト
@@ -26,11 +24,7 @@ class MultiPortServer {
   ~MultiPortServer();
 
   // ポートを設定
-  void addPort(int port);
   void setPorts(const std::vector<int>& ports);
-
-  // サーバーソケットを初期化
-  bool initializeSockets();
 
   // 各種ゲッター
   const std::vector<int>& getServerFds() const;
@@ -40,4 +34,7 @@ class MultiPortServer {
 
   // サーバーソケットをクローズ
   void closeSockets();
+  
+  // OSInitと連携するための新しいメソッド
+  void addServerFd(int fd, int port);
 };

@@ -33,7 +33,6 @@ class RunServer {
   void add_poll_fd(pollfd poll_fd);
   void handle_new_connection(int server_fd);
   void handle_client_data(size_t i, std::string port);
-  void process_poll_events(ServerData &server_data);
   std::string getConfPath();
   void setConfPath(std::string confPath);
 

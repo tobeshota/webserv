@@ -16,24 +16,11 @@ void RunServer::setConfPath(std::string confPath) { _confPath = confPath; }
 
 std::vector<pollfd> &RunServer::get_poll_fds() { return poll_fds; }
 
-// メインループを実行する関数
-void RunServer::run(ServerData &server_data) {
-  while (true) {
-    // pollシステムコールを呼び出し、イベントを待つ
-    poll(poll_fds.data(), poll_fds.size(), -1);
-    // pollイベントを処理
-    process_poll_events(server_data);
-  }
-}
-
 // MultiPortServer用のイベントループ実装
 void RunServer::runMultiPort(MultiPortServer &server) {
   while (true) {
     // pollシステムコールを呼び出し、イベントを待つ
-    int poll_count = poll(poll_fds.data(), poll_fds.size(), -1);
-
-    // デバッグ用出力
-    std::cout << poll_count << std::endl;
+    poll(poll_fds.data(), poll_fds.size(), -1);
     // イベント処理
     process_poll_events_multiport(server);
   }
@@ -123,13 +110,6 @@ void RunServer::handle_client_data(size_t client_fd, std::string receivedPort) {
     // HTTPレスポンスオブジェクトを作成
     HTTPResponse httpResponse;
 
-    // URLリダイレクトが指定されている場合，httpRequestのURLをリダイレクト先に変更する
-    // URLリダイレクトとはすなわち，HTTPリクエストのURLを変更することであるため．
-    GenerateHTTPResponse serchReturnValue(*rootDirective, httpRequest);
-    if (serchReturnValue.getDirectiveValue("return") != "") {
-      httpRequest.setURL(serchReturnValue.getDirectiveValue("return"));
-    }
-
     // 鎖をつなげる
     PrintResponse printResponse(get_poll_fds()[client_fd].fd);
     GenerateHTTPResponse generateHTTPResponse(*rootDirective, httpRequest);
@@ -165,27 +145,6 @@ static std::string int2str(int nb) {
   return ss.str();
 }
 
-// pollにより、イベント発生してからforをするので、busy-waitではない
-//  pollイベントを処理する関数。ポーリングだけど、「イベントが来るまで待機する」ので
-//  busy-wait ではない
-void RunServer::process_poll_events(ServerData &server_data) {
-  // 監視対象のファイルディスクリプタ（pollfdリスト）をループでチェック
-  for (size_t i = 0; i < get_poll_fds().size(); ++i) {
-    // pollfd構造体のreventsにPOLLIN（読み込み可能イベント）がセットされている場合
-    if (get_poll_fds()[i].revents & POLLIN) {
-      // サーバーのファイルディスクリプタがイベントを発生させた場合
-      if (get_poll_fds()[i].fd == server_data.get_server_fd()) {
-        // 新しい接続を受け入れる処理を実行
-        handle_new_connection(server_data.get_server_fd());
-      } else {
-        // クライアントから送信されたデータを処理
-        // 該当するクライアントのデータを処理
-        std::string port = int2str(ntohs(server_data.get_address().sin_port));
-        handle_client_data(i, port);
-      }
-    }
-  }
-}
 
 // MultiPortServer用のイベント処理
 void RunServer::process_poll_events_multiport(MultiPortServer &server) {
@@ -202,9 +161,8 @@ void RunServer::process_poll_events_multiport(MultiPortServer &server) {
         handle_new_connection(current_fd);
       } else {
         // クライアント接続からのデータ
-        // handle_client_data(i, int2str(server.getPortByFd(current_fd)));
-        //  本来は受信待機中のポートのうち実際に受信したクライアントのポートを取得する必要がある
-        handle_client_data(i, int2str(80));
+        int server_port = server.getPortByFd(current_fd);
+        handle_client_data(i, int2str(server_port));
       }
     }
   }

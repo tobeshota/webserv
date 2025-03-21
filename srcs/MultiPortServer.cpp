@@ -1,4 +1,3 @@
-
 #include "MultiPortServer.hpp"
 
 MultiPortServer::MultiPortServer() {}
@@ -8,76 +7,9 @@ MultiPortServer::~MultiPortServer() {
   closeSockets();
 }
 
-// 単一のポートを追加
-void MultiPortServer::addPort(int port) { ports.push_back(port); }
-
 // 複数ポートをまとめて設定
 void MultiPortServer::setPorts(const std::vector<int>& new_ports) {
   ports = new_ports;
-}
-
-// サーバーソケットを初期化
-bool MultiPortServer::initializeSockets() {
-  // 既存のソケットをクローズ
-  closeSockets();
-
-  // 配列をクリア
-  server_fds.clear();
-  fd_to_port.clear();
-  addrs.clear();
-
-  bool success = false;
-
-  // 各ポートに対してソケットを作成
-  for (size_t i = 0; i < ports.size(); ++i) {
-    int port = ports[i];
-    int server_fd;
-
-    // ソケット作成
-    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
-      std::cerr << "ソケット作成失敗: ポート " << port << std::endl;
-      continue;
-    }
-
-    // ソケットの再利用設定
-    int opt = 1;
-    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) <
-        0) {
-      std::cerr << "setsockopt失敗: ポート " << port << std::endl;
-      close(server_fd);
-      continue;
-    }
-
-    // アドレス設定
-    struct sockaddr_in address;
-    address.sin_family = AF_INET;
-    address.sin_addr.s_addr = INADDR_ANY;
-    address.sin_port = htons(port);
-
-    // バインド
-    if (bind(server_fd, (struct sockaddr*)&address, sizeof(address)) < 0) {
-      std::cerr << "バインド失敗: ポート " << port << std::endl;
-      close(server_fd);
-      continue;
-    }
-
-    // リッスン開始
-    if (listen(server_fd, MAX_CONNECTION) < 0) {
-      std::cerr << "Listen失敗: ポート " << port << std::endl;
-      close(server_fd);
-      continue;
-    }
-
-    // 成功したらリストに追加
-    server_fds.push_back(server_fd);
-    fd_to_port[server_fd] = port;
-    addrs.push_back(address);
-    success = true;
-
-    std::cout << "Listening on port " << port << std::endl;
-  }
-
-  return success;  // 少なくとも1つのポートが成功したかどうか
 }
 
 // サーバーFDのリストを取得
@@ -112,4 +44,22 @@ void MultiPortServer::closeSockets() {
   server_fds.clear();
   fd_to_port.clear();
   addrs.clear();
+}
+
+// OSInitで初期化したサーバーFDを追加するメソッド
+void MultiPortServer::addServerFd(int fd, int port) {
+  if(fd < 0) {
+    return;
+  }
+  server_fds.push_back(fd);
+  fd_to_port[fd] = port;
+  
+  // アドレス情報も保存（必要に応じて）
+  struct sockaddr_in address;
+  address.sin_family = AF_INET;
+  address.sin_addr.s_addr = INADDR_ANY;
+  address.sin_port = htons(port);
+  addrs.push_back(address);
+  
+  std::cout << "Added server fd " << fd << " for port " << port << std::endl;
 }
