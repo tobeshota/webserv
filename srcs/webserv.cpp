@@ -8,14 +8,12 @@
 #include "TOMLParser.hpp"
 
 // stoiの再実装．string型の文字列を数値として読み取り，int型の値に変換する
-static int	string_to_int(const std::string str)
-{
-	int	result;
+static int string_to_int(const std::string str) {
+  int result;
 
-	std::istringstream iss(str);
-	if (!(iss >> result))
-		return (-1);
-	return (result);
+  std::istringstream iss(str);
+  if (!(iss >> result)) return (-1);
+  return (result);
 }
 
 //// 複数のポートを用意（本来はconfファイルから取得）の関数を作る

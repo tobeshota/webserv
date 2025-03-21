@@ -21,7 +21,6 @@ class RunServer {
   std::string _confPath;
   std::map<int, int> client_to_port;  // クライアントFD → サーバーポートのマップ
 
-
  public:
   RunServer();
   ~RunServer();
