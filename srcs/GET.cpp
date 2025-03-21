@@ -71,7 +71,6 @@ void GET::handleRequest(HTTPResponse& httpResponse) {
   } else {
     // 通常のファイルリクエストの場合
     std::string fullPath = getFullPath();
-    std::cout << fullPath << std::endl;
     setHttpStatusCode(httpResponse, fullPath);
   }
 
