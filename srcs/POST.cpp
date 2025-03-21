@@ -257,6 +257,12 @@ void POST::setHttpStatusCode(HTTPResponse& httpResponse,
     return;
   }
 
+  // ファイルの存在確認 - POSTは既存ファイルの更新のみ許可
+  if (!fileExists(fullPath)) {
+    httpResponse.setHttpStatusCode(404);  // Not Found
+    return;
+  }
+
   // ディレクトリの書き込み権限確認 - この確認を厳密に行う
   if (!hasWritePermission(dirPath)) {
     httpResponse.setHttpStatusCode(403);  // Forbidden
