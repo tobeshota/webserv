@@ -433,25 +433,27 @@ TEST_F(HTTPRequestParserTest, MissingHostHeaderInHttp11) {
 
 // パーサーのリセット機能テスト
 TEST_F(HTTPRequestParserTest, ParserReset) {
-  std::string request1 = "GET /index.html HTTP/1.1\r\nHost: example.com\r\n\r\n";
+  std::string request1 =
+      "GET /index.html HTTP/1.1\r\nHost: example.com\r\n\r\n";
   HTTPRequest result1 = parseRequest(request1);
-  
+
   EXPECT_EQ(result1.getMethod(), "GET");
   EXPECT_EQ(result1.getURL(), "/index.html");
-  
+
   // 異なるリクエストで再度テスト
   std::string request2 = "POST /submit HTTP/1.1\r\nHost: example.com\r\n\r\n";
   HTTPRequest result2 = parseRequest(request2);
-  
+
   EXPECT_EQ(result2.getMethod(), "POST");
   EXPECT_EQ(result2.getURL(), "/submit");
 }
 
 // HEADメソッドテスト
 TEST_F(HTTPRequestParserTest, HeadMethod) {
-  std::string request = "HEAD /index.html HTTP/1.1\r\nHost: example.com\r\n\r\n";
+  std::string request =
+      "HEAD /index.html HTTP/1.1\r\nHost: example.com\r\n\r\n";
   HTTPRequest result = parseRequest(request);
-  
+
   EXPECT_EQ(result.getMethod(), "HEAD");
   EXPECT_EQ(result.getURL(), "/index.html");
   EXPECT_TRUE(result.getBody().empty());
@@ -461,7 +463,7 @@ TEST_F(HTTPRequestParserTest, HeadMethod) {
 TEST_F(HTTPRequestParserTest, OptionsMethod) {
   std::string request = "OPTIONS * HTTP/1.1\r\nHost: example.com\r\n\r\n";
   HTTPRequest result = parseRequest(request);
-  
+
   EXPECT_EQ(result.getMethod(), "OPTIONS");
   EXPECT_EQ(result.getURL(), "*");
 }
@@ -504,12 +506,16 @@ TEST_F(HTTPRequestParserTest, ComplexChunkedEncoding) {
 // より複雑なリクエストURLのテスト
 TEST_F(HTTPRequestParserTest, ComplexRequestURL) {
   std::string request =
-      "GET /path/to/resource/with/multiple/segments?param1=value1&param2=value2#fragment HTTP/1.1\r\n"
+      "GET "
+      "/path/to/resource/with/multiple/"
+      "segments?param1=value1&param2=value2#fragment HTTP/1.1\r\n"
       "Host: example.com\r\n\r\n";
 
   HTTPRequest result = parseRequest(request);
   EXPECT_EQ(result.getMethod(), "GET");
-  EXPECT_EQ(result.getURL(), "/path/to/resource/with/multiple/segments?param1=value1&param2=value2#fragment");
+  EXPECT_EQ(result.getURL(),
+            "/path/to/resource/with/multiple/"
+            "segments?param1=value1&param2=value2#fragment");
 }
 
 // // ホスト名にポート番号を含むリクエストのテスト
@@ -580,7 +586,8 @@ TEST_F(HTTPRequestParserTest, InvalidContentLength) {
 // リクエストラインの最大長テスト
 TEST_F(HTTPRequestParserTest, VeryLongRequestLine) {
   std::string veryLongPath(8000, 'a');
-  std::string request = "GET /" + veryLongPath + " HTTP/1.1\r\nHost: example.com\r\n\r\n";
+  std::string request =
+      "GET /" + veryLongPath + " HTTP/1.1\r\nHost: example.com\r\n\r\n";
 
   HTTPRequest result = parseRequest(request);
   EXPECT_EQ(result.getMethod(), "GET");
@@ -598,7 +605,8 @@ TEST_F(HTTPRequestParserTest, TraceMethod) {
 
 // 追加のHTTPメソッドテスト - CONNECT
 TEST_F(HTTPRequestParserTest, ConnectMethod) {
-  std::string request = "CONNECT example.com:443 HTTP/1.1\r\nHost: example.com\r\n\r\n";
+  std::string request =
+      "CONNECT example.com:443 HTTP/1.1\r\nHost: example.com\r\n\r\n";
 
   HTTPRequest result = parseRequest(request);
   EXPECT_EQ(result.getMethod(), "CONNECT");
@@ -622,7 +630,7 @@ TEST_F(HTTPRequestParserTest, ConnectMethod) {
 // 空パスのリクエストテスト
 TEST_F(HTTPRequestParserTest, EmptyPath) {
   std::string request = "GET / HTTP/1.1\r\nHost: example.com\r\n\r\n";
-  
+
   HTTPRequest result = parseRequest(request);
   EXPECT_EQ(result.getMethod(), "GET");
   EXPECT_EQ(result.getURL(), "/");
@@ -634,13 +642,13 @@ TEST_F(HTTPRequestParserTest, PartialFeed) {
   HTTPRequestParser localParser;
   std::string request1 = "GET /index.html HTTP/1.1\r\n";
   std::string request2 = "Host: example.com\r\n\r\n";
-  
+
   EXPECT_FALSE(localParser.feed(request1.c_str(), request1.length()));
   EXPECT_FALSE(localParser.isComplete());
-  
+
   EXPECT_TRUE(localParser.feed(request2.c_str(), request2.length()));
   EXPECT_TRUE(localParser.isComplete());
-  
+
   HTTPRequest result = localParser.createRequest();
   EXPECT_EQ(result.getMethod(), "GET");
   EXPECT_EQ(result.getURL(), "/index.html");
@@ -651,7 +659,7 @@ TEST_F(HTTPRequestParserTest, PartialFeed) {
 // TEST_F(HTTPRequestParserTest, LargeChunks) {
 //   std::string chunk1(4000, 'A');
 //   std::string chunk2(2000, 'B');
-  
+
 //   std::string request =
 //       "POST /upload HTTP/1.1\r\n"
 //       "Host: example.com\r\n"
@@ -701,7 +709,8 @@ TEST_F(HTTPRequestParserTest, MixedCaseHeaderNames) {
 
 // エラー状態の詳細テスト - 無効なHTTPバージョン形式
 TEST_F(HTTPRequestParserTest, InvalidHttpVersionFormat) {
-  std::string request = "GET /index.html HTTTP/1.1\r\nHost: example.com\r\n\r\n";
+  std::string request =
+      "GET /index.html HTTTP/1.1\r\nHost: example.com\r\n\r\n";
   EXPECT_THROW(parseRequest(request), std::runtime_error);
 }
 
@@ -801,18 +810,18 @@ TEST_F(HTTPRequestParserTest, VeryLongHeaderName) {
 // テストパーサーリセット後の動作
 TEST_F(HTTPRequestParserTest, ResetBetweenIncompleteRequests) {
   HTTPRequestParser localParser;
-  
+
   // 不完全なリクエスト
   std::string request1 = "GET /page1 HTTP/1.1\r\n";
   EXPECT_FALSE(localParser.feed(request1.c_str(), request1.length()));
-  
+
   // リセット
   localParser.reset();
-  
+
   // 新しい完全なリクエスト
   std::string request2 = "GET /page2 HTTP/1.1\r\nHost: example.com\r\n\r\n";
   EXPECT_TRUE(localParser.feed(request2.c_str(), request2.length()));
-  
+
   HTTPRequest result = localParser.createRequest();
   EXPECT_EQ(result.getMethod(), "GET");
   EXPECT_EQ(result.getURL(), "/page2");
@@ -821,7 +830,7 @@ TEST_F(HTTPRequestParserTest, ResetBetweenIncompleteRequests) {
 // リクエストパーサーのエラーメッセージテスト
 // TEST_F(HTTPRequestParserTest, ErrorMessageTest) {
 //   HTTPRequestParser localParser;
-  
+
 //   // 不正なリクエスト
 //   std::string badRequest = "INVALID!!! REQUEST!!!";
 //   EXPECT_FALSE(localParser.feed(badRequest.c_str(), badRequest.length()));
@@ -832,21 +841,21 @@ TEST_F(HTTPRequestParserTest, ResetBetweenIncompleteRequests) {
 // エラー回復テスト
 // TEST_F(HTTPRequestParserTest, ErrorRecoveryAfterReset) {
 //   HTTPRequestParser localParser;
-  
+
 //   // 不正なリクエスト
 //   std::string badRequest = "BAD /invalid HTTP/1.1\r\n\r\n";
 //   EXPECT_FALSE(localParser.feed(badRequest.c_str(), badRequest.length()));
 //   EXPECT_TRUE(localParser.hasError());
-  
+
 //   // リセット
 //   localParser.reset();
 //   EXPECT_FALSE(localParser.hasError());
-  
+
 //   // 有効なリクエスト
-//   std::string goodRequest = "GET /valid HTTP/1.1\r\nHost: example.com\r\n\r\n";
-//   EXPECT_TRUE(localParser.feed(goodRequest.c_str(), goodRequest.length()));
-//   EXPECT_FALSE(localParser.hasError());
-  
+//   std::string goodRequest = "GET /valid HTTP/1.1\r\nHost:
+//   example.com\r\n\r\n"; EXPECT_TRUE(localParser.feed(goodRequest.c_str(),
+//   goodRequest.length())); EXPECT_FALSE(localParser.hasError());
+
 //   HTTPRequest result = localParser.createRequest();
 //   EXPECT_EQ(result.getMethod(), "GET");
 //   EXPECT_EQ(result.getURL(), "/valid");
@@ -864,7 +873,8 @@ TEST_F(HTTPRequestParserTest, SpecialHeaderFields) {
   HTTPRequest result = parseRequest(request);
   EXPECT_EQ(result.getMethod(), "GET");
   EXPECT_EQ(result.getURL(), "/index.html");
-  EXPECT_EQ(result.getHeader("If-Modified-Since"), "Sat, 29 Oct 2023 19:43:31 GMT");
+  EXPECT_EQ(result.getHeader("If-Modified-Since"),
+            "Sat, 29 Oct 2023 19:43:31 GMT");
   EXPECT_EQ(result.getHeader("If-None-Match"), "\"686897696a7c876b7e\"");
   EXPECT_EQ(result.getHeader("X-Custom-Header"), "Test/1.0");
 }
@@ -872,25 +882,25 @@ TEST_F(HTTPRequestParserTest, SpecialHeaderFields) {
 // フィードAPIの段階的テスト
 TEST_F(HTTPRequestParserTest, IncrementalFeedTest) {
   HTTPRequestParser localParser;
-  
+
   // リクエストを小さな部分に分割
   std::string part1 = "GET /ind";
   std::string part2 = "ex.html HTT";
   std::string part3 = "P/1.1\r\nHost: ";
   std::string part4 = "example.com\r\n\r\n";
-  
+
   EXPECT_FALSE(localParser.feed(part1.c_str(), part1.length()));
   EXPECT_FALSE(localParser.isComplete());
-  
+
   EXPECT_FALSE(localParser.feed(part2.c_str(), part2.length()));
   EXPECT_FALSE(localParser.isComplete());
-  
+
   EXPECT_FALSE(localParser.feed(part3.c_str(), part3.length()));
   EXPECT_FALSE(localParser.isComplete());
-  
+
   EXPECT_TRUE(localParser.feed(part4.c_str(), part4.length()));
   EXPECT_TRUE(localParser.isComplete());
-  
+
   HTTPRequest result = localParser.createRequest();
   EXPECT_EQ(result.getMethod(), "GET");
   EXPECT_EQ(result.getURL(), "/index.html");
@@ -905,7 +915,7 @@ TEST_F(HTTPRequestParserTest, ComplexChunkedScenario) {
       "Transfer-Encoding: chunked\r\n\r\n"
       "3\r\n"  // 3バイトチャンク
       "abc\r\n"
-      "0\r\n"  // 終了チャンク
+      "0\r\n"                         // 終了チャンク
       "X-Trailer: trailer-value\r\n"  // トレーラーヘッダー
       "\r\n";
 
@@ -927,25 +937,29 @@ TEST_F(HTTPRequestParserTest, PathWithDotSegments) {
 
 // 無効なリクエストメソッド開始文字のテスト
 TEST_F(HTTPRequestParserTest, InvalidRequestMethodStartChar) {
-  std::string request = "!GET /index.html HTTP/1.1\r\nHost: example.com\r\n\r\n";
+  std::string request =
+      "!GET /index.html HTTP/1.1\r\nHost: example.com\r\n\r\n";
   EXPECT_THROW(parseRequest(request), std::runtime_error);
 }
 
 // リクエストメソッド中の無効文字テスト
 TEST_F(HTTPRequestParserTest, InvalidCharInMethod) {
-  std::string request = "GE\tT /index.html HTTP/1.1\r\nHost: example.com\r\n\r\n";
+  std::string request =
+      "GE\tT /index.html HTTP/1.1\r\nHost: example.com\r\n\r\n";
   EXPECT_THROW(parseRequest(request), std::runtime_error);
 }
 
 // 無効なURI開始文字テスト
 TEST_F(HTTPRequestParserTest, InvalidURIStartChar) {
-  std::string request = "GET \x01index.html HTTP/1.1\r\nHost: example.com\r\n\r\n";
+  std::string request =
+      "GET \x01index.html HTTP/1.1\r\nHost: example.com\r\n\r\n";
   EXPECT_THROW(parseRequest(request), std::runtime_error);
 }
 
 // URIに制御文字を含むテスト
 TEST_F(HTTPRequestParserTest, ControlCharInURI) {
-  std::string request = "GET /index\x00.html HTTP/1.1\r\nHost: example.com\r\n\r\n";
+  std::string request =
+      "GET /index\x00.html HTTP/1.1\r\nHost: example.com\r\n\r\n";
   EXPECT_THROW(parseRequest(request), std::runtime_error);
 }
 
@@ -978,7 +992,8 @@ TEST_F(HTTPRequestParserTest, InvalidHttpVersionMajorStart) {
 
 // 無効なHTTPバージョンメジャーの途中のテスト
 TEST_F(HTTPRequestParserTest, InvalidHttpVersionMajor) {
-  std::string request = "GET /index.html HTTP/1A.1\r\nHost: example.com\r\n\r\n";
+  std::string request =
+      "GET /index.html HTTP/1A.1\r\nHost: example.com\r\n\r\n";
   EXPECT_THROW(parseRequest(request), std::runtime_error);
 }
 
@@ -990,7 +1005,8 @@ TEST_F(HTTPRequestParserTest, InvalidHttpVersionMinorStart) {
 
 // 無効なHTTPバージョンマイナーの途中のテスト
 TEST_F(HTTPRequestParserTest, InvalidHttpVersionMinor) {
-  std::string request = "GET /index.html HTTP/1.1A\r\nHost: example.com\r\n\r\n";
+  std::string request =
+      "GET /index.html HTTP/1.1A\r\nHost: example.com\r\n\r\n";
   EXPECT_THROW(parseRequest(request), std::runtime_error);
 }
 
@@ -1002,32 +1018,39 @@ TEST_F(HTTPRequestParserTest, MissingNewline1) {
 
 // ヘッダーラインの開始での無効文字テスト
 TEST_F(HTTPRequestParserTest, InvalidHeaderNameStart) {
-  std::string request = "GET /index.html HTTP/1.1\r\n:Invalid: value\r\nHost: example.com\r\n\r\n";
+  std::string request =
+      "GET /index.html HTTP/1.1\r\n:Invalid: value\r\nHost: "
+      "example.com\r\n\r\n";
   EXPECT_THROW(parseRequest(request), std::runtime_error);
 }
 
 // ヘッダー名の無効文字テスト
 TEST_F(HTTPRequestParserTest, InvalidCharInHeaderName) {
-  std::string request = "GET /index.html HTTP/1.1\r\nHo\x01st: example.com\r\n\r\n";
+  std::string request =
+      "GET /index.html HTTP/1.1\r\nHo\x01st: example.com\r\n\r\n";
   EXPECT_THROW(parseRequest(request), std::runtime_error);
 }
 
 // ヘッダー値の無効文字テスト
 TEST_F(HTTPRequestParserTest, InvalidCharInHeaderValue) {
-  std::string request = "GET /index.html HTTP/1.1\r\nHost: example\x00.com\r\n\r\n";
+  std::string request =
+      "GET /index.html HTTP/1.1\r\nHost: example\x00.com\r\n\r\n";
   EXPECT_THROW(parseRequest(request), std::runtime_error);
 }
 
 // ヘッダー値前のスペース後の改行テスト
 TEST_F(HTTPRequestParserTest, NewlineAfterSpaceBeforeHeaderValue) {
-  std::string request = "GET /index.html HTTP/1.1\r\nHeader: \r\nHost: example.com\r\n\r\n";
+  std::string request =
+      "GET /index.html HTTP/1.1\r\nHeader: \r\nHost: example.com\r\n\r\n";
   HTTPRequest result = parseRequest(request);
   EXPECT_EQ(result.getHeader("Header"), "");
 }
 
 // 2回目の改行文字がない場合のテスト
 TEST_F(HTTPRequestParserTest, MissingNewline2) {
-  std::string request = "GET /index.html HTTP/1.1\r\nHost: example.com\rContent-Type: text/html\r\n\r\n";
+  std::string request =
+      "GET /index.html HTTP/1.1\r\nHost: example.com\rContent-Type: "
+      "text/html\r\n\r\n";
   EXPECT_THROW(parseRequest(request), std::runtime_error);
 }
 
@@ -1046,7 +1069,7 @@ TEST_F(HTTPRequestParserTest, EmptyChunkSize) {
       "\r\n"  // 空のチャンクサイズ
       "data\r\n"
       "0\r\n\r\n";
-  
+
   EXPECT_THROW(parseRequest(request), std::runtime_error);
 }
 
@@ -1059,7 +1082,7 @@ TEST_F(HTTPRequestParserTest, InvalidChunkSizeChar) {
       "XYZ\r\n"  // 16進数以外
       "data\r\n"
       "0\r\n\r\n";
-  
+
   EXPECT_THROW(parseRequest(request), std::runtime_error);
 }
 
@@ -1071,7 +1094,7 @@ TEST_F(HTTPRequestParserTest, MissingCRAfterChunkSize) {
       "Transfer-Encoding: chunked\r\n\r\n"
       "3\ndata\r\n"
       "0\r\n\r\n";
-  
+
   EXPECT_THROW(parseRequest(request), std::runtime_error);
 }
 
@@ -1083,7 +1106,7 @@ TEST_F(HTTPRequestParserTest, MissingLFAfterChunkSize) {
       "Transfer-Encoding: chunked\r\n\r\n"
       "3\rdata\r\n"
       "0\r\n\r\n";
-  
+
   EXPECT_THROW(parseRequest(request), std::runtime_error);
 }
 
@@ -1095,7 +1118,7 @@ TEST_F(HTTPRequestParserTest, MissingCRAfterChunkData) {
       "Transfer-Encoding: chunked\r\n\r\n"
       "4\r\ndata\n"
       "0\r\n\r\n";
-  
+
   EXPECT_THROW(parseRequest(request), std::runtime_error);
 }
 
@@ -1107,7 +1130,7 @@ TEST_F(HTTPRequestParserTest, MissingLFAfterChunkData) {
       "Transfer-Encoding: chunked\r\n\r\n"
       "4\r\ndata\r"
       "0\r\n\r\n";
-  
+
   EXPECT_THROW(parseRequest(request), std::runtime_error);
 }
 
@@ -1120,7 +1143,7 @@ TEST_F(HTTPRequestParserTest, MissingNewlineAfterChunkTrailer) {
       "4\r\ndata\r\n"
       "0\r\n"
       "X-Trailer: value\r";
-  
+
   EXPECT_THROW(parseRequest(request), std::runtime_error);
 }
 
@@ -1133,7 +1156,7 @@ TEST_F(HTTPRequestParserTest, MissingNewlineAfterChunkTrailer) {
 //       "4;name=value\r\n"  // チャンク拡張あり
 //       "data\r\n"
 //       "0\r\n\r\n";
-  
+
 //   HTTPRequest result = parseRequest(request);
 //   EXPECT_EQ(result.getMethod(), "POST");
 //   EXPECT_EQ(result.getBody(), "data");
@@ -1150,7 +1173,7 @@ TEST_F(HTTPRequestParserTest, MultilineChunkTrailer) {
       "X-Trailer1: value1\r\n"
       "X-Trailer2: value2\r\n"
       "\r\n";
-  
+
   HTTPRequest result = parseRequest(request);
   EXPECT_EQ(result.getMethod(), "POST");
   EXPECT_EQ(result.getBody(), "data");
@@ -1158,7 +1181,8 @@ TEST_F(HTTPRequestParserTest, MultilineChunkTrailer) {
 
 // HTTPバージョンに複数桁の数字を含むケース
 TEST_F(HTTPRequestParserTest, MultiDigitHttpVersion) {
-  std::string request = "GET /index.html HTTP/11.22\r\nHost: example.com\r\n\r\n";
+  std::string request =
+      "GET /index.html HTTP/11.22\r\nHost: example.com\r\n\r\n";
   HTTPRequest result = parseRequest(request);
   EXPECT_EQ(result.getMethod(), "GET");
   EXPECT_EQ(result.getURL(), "/index.html");
@@ -1172,7 +1196,7 @@ TEST_F(HTTPRequestParserTest, HeaderWithConsecutiveControls) {
       "X-Header: value\r\n"
       " \t \t value2\r\n"
       "Host: example.com\r\n\r\n";
-  
+
   HTTPRequest result = parseRequest(request);
   EXPECT_EQ(result.getHeader("X-Header"), "value value2");
 }
@@ -1182,7 +1206,7 @@ TEST_F(HTTPRequestParserTest, URLWithSpecialPathChars) {
   std::string request =
       "GET /path/with~special$chars+and-more HTTP/1.1\r\n"
       "Host: example.com\r\n\r\n";
-  
+
   HTTPRequest result = parseRequest(request);
   EXPECT_EQ(result.getMethod(), "GET");
   EXPECT_EQ(result.getURL(), "/path/with~special$chars+and-more");
@@ -1193,7 +1217,7 @@ TEST_F(HTTPRequestParserTest, URLWithEmoji) {
   std::string request =
       "GET /path/with/%F0%9F%98%8A/emoji HTTP/1.1\r\n"
       "Host: example.com\r\n\r\n";
-  
+
   HTTPRequest result = parseRequest(request);
   EXPECT_EQ(result.getMethod(), "GET");
   EXPECT_EQ(result.getURL(), "/path/with/%F0%9F%98%8A/emoji");
@@ -1203,10 +1227,11 @@ TEST_F(HTTPRequestParserTest, URLWithEmoji) {
 TEST_F(HTTPRequestParserTest, MinimalValidRequest) {
   HTTPRequestParser localParser;
   std::string minimalRequest = "GET / HTTP/1.0\r\n\r\n";
-  
-  EXPECT_TRUE(localParser.feed(minimalRequest.c_str(), minimalRequest.length()));
+
+  EXPECT_TRUE(
+      localParser.feed(minimalRequest.c_str(), minimalRequest.length()));
   EXPECT_TRUE(localParser.isComplete());
-  
+
   HTTPRequest result = localParser.createRequest();
   EXPECT_EQ(result.getMethod(), "GET");
   EXPECT_EQ(result.getURL(), "/");
@@ -1216,16 +1241,17 @@ TEST_F(HTTPRequestParserTest, MinimalValidRequest) {
 // バイト単位で送信する詳細テスト
 TEST_F(HTTPRequestParserTest, ByteByByteFeed) {
   HTTPRequestParser localParser;
-  std::string fullRequest = "GET /index.html HTTP/1.1\r\nHost: example.com\r\n\r\n";
-  
+  std::string fullRequest =
+      "GET /index.html HTTP/1.1\r\nHost: example.com\r\n\r\n";
+
   for (size_t i = 0; i < fullRequest.length() - 1; ++i) {
     EXPECT_FALSE(localParser.feed(&fullRequest[i], 1));
   }
-  
+
   // 最後のバイト
   EXPECT_TRUE(localParser.feed(&fullRequest[fullRequest.length() - 1], 1));
   EXPECT_TRUE(localParser.isComplete());
-  
+
   HTTPRequest result = localParser.createRequest();
   EXPECT_EQ(result.getMethod(), "GET");
   EXPECT_EQ(result.getURL(), "/index.html");
@@ -1235,20 +1261,20 @@ TEST_F(HTTPRequestParserTest, ByteByByteFeed) {
 // 部分的チャンクを扱うテスト
 TEST_F(HTTPRequestParserTest, PartialChunkedContent) {
   HTTPRequestParser localParser;
-  
-  std::string part1 = 
+
+  std::string part1 =
       "POST /upload HTTP/1.1\r\n"
       "Host: example.com\r\n"
       "Transfer-Encoding: chunked\r\n\r\n"
       "4\r\n";
-  
-  std::string part2 = 
+
+  std::string part2 =
       "data\r\n"
       "0\r\n\r\n";
-  
+
   EXPECT_FALSE(localParser.feed(part1.c_str(), part1.length()));
   EXPECT_TRUE(localParser.feed(part2.c_str(), part2.length()));
-  
+
   HTTPRequest result = localParser.createRequest();
   EXPECT_EQ(result.getMethod(), "POST");
   EXPECT_EQ(result.getBody(), "data");
@@ -1257,18 +1283,18 @@ TEST_F(HTTPRequestParserTest, PartialChunkedContent) {
 // Content-Length付きの部分的なボディ送信テスト
 TEST_F(HTTPRequestParserTest, PartialBodyWithContentLength) {
   HTTPRequestParser localParser;
-  
-  std::string part1 = 
+
+  std::string part1 =
       "POST /submit HTTP/1.1\r\n"
       "Host: example.com\r\n"
       "Content-Length: 10\r\n\r\n"
       "12345";
-  
+
   std::string part2 = "67890";
-  
+
   EXPECT_FALSE(localParser.feed(part1.c_str(), part1.length()));
   EXPECT_TRUE(localParser.feed(part2.c_str(), part2.length()));
-  
+
   HTTPRequest result = localParser.createRequest();
   EXPECT_EQ(result.getMethod(), "POST");
   EXPECT_EQ(result.getBody(), "1234567890");
@@ -1277,24 +1303,24 @@ TEST_F(HTTPRequestParserTest, PartialBodyWithContentLength) {
 // 不完全なチャンクを扱うテスト
 TEST_F(HTTPRequestParserTest, IncompleteChunk) {
   HTTPRequestParser localParser;
-  
-  std::string part1 = 
+
+  std::string part1 =
       "POST /upload HTTP/1.1\r\n"
       "Host: example.com\r\n"
       "Transfer-Encoding: chunked\r\n\r\n"
-      "A\r\n"  // 10バイトのチャンク
+      "A\r\n"   // 10バイトのチャンク
       "12345";  // 5バイトのみ
-  
+
   EXPECT_FALSE(localParser.feed(part1.c_str(), part1.length()));
   EXPECT_FALSE(localParser.isComplete());
-  
-  std::string part2 = 
-      "67890\r\n"  // 残りの5バイトとチャンク終端
+
+  std::string part2 =
+      "67890\r\n"   // 残りの5バイトとチャンク終端
       "0\r\n\r\n";  // 終端チャンク
-  
+
   EXPECT_TRUE(localParser.feed(part2.c_str(), part2.length()));
   EXPECT_TRUE(localParser.isComplete());
-  
+
   HTTPRequest result = localParser.createRequest();
   EXPECT_EQ(result.getMethod(), "POST");
   EXPECT_EQ(result.getBody(), "1234567890");
@@ -1303,25 +1329,27 @@ TEST_F(HTTPRequestParserTest, IncompleteChunk) {
 // 特に多いリクエストメソッドテスト
 TEST_F(HTTPRequestParserTest, LongRequestMethod) {
   // RFC7231で定義されていないメソッドは実装によって拒否されるかもしれないことに注意
-  EXPECT_THROW(parseRequest("AVERYLONGMETHODNAME /index.html HTTP/1.1\r\nHost: example.com\r\n\r\n"), std::runtime_error);
+  EXPECT_THROW(parseRequest("AVERYLONGMETHODNAME /index.html HTTP/1.1\r\nHost: "
+                            "example.com\r\n\r\n"),
+               std::runtime_error);
 }
 
 // バッファ境界でのボディ解析テスト
 // TEST_F(HTTPRequestParserTest, BodyParsingAtBufferBoundaries) {
 //   HTTPRequestParser localParser;
-  
-//   std::string headers = 
+
+//   std::string headers =
 //       "POST /submit HTTP/1.1\r\n"
 //       "Host: example.com\r\n"
 //       "Content-Length: 20\r\n\r\n";
-  
+
 //   std::string body1 = "12345678901";  // 11バイト
 //   std::string body2 = "23456789";     // 9バイト - 合計20バイト
-  
+
 //   EXPECT_FALSE(localParser.feed(headers.c_str(), headers.length()));
 //   EXPECT_FALSE(localParser.feed(body1.c_str(), body1.length()));
 //   EXPECT_TRUE(localParser.feed(body2.c_str(), body2.length()));
-  
+
 //   HTTPRequest result = localParser.createRequest();
 //   EXPECT_EQ(result.getMethod(), "POST");
 //   EXPECT_EQ(result.getBody().length(), 20);
@@ -1331,13 +1359,13 @@ TEST_F(HTTPRequestParserTest, LongRequestMethod) {
 // 2バイトでの正確なURIバウンダリテスト
 TEST_F(HTTPRequestParserTest, TwoByteURIBoundary) {
   HTTPRequestParser localParser;
-  
+
   std::string part1 = "GET /";
   std::string part2 = " HTTP/1.1\r\nHost: example.com\r\n\r\n";
-  
+
   EXPECT_FALSE(localParser.feed(part1.c_str(), part1.length()));
   EXPECT_TRUE(localParser.feed(part2.c_str(), part2.length()));
-  
+
   HTTPRequest result = localParser.createRequest();
   EXPECT_EQ(result.getMethod(), "GET");
   EXPECT_EQ(result.getURL(), "/");
@@ -1346,13 +1374,13 @@ TEST_F(HTTPRequestParserTest, TwoByteURIBoundary) {
 // 状態の切り替わりポイントのテスト - ヘッダー名と値の境界
 TEST_F(HTTPRequestParserTest, HeaderNameValueBoundary) {
   HTTPRequestParser localParser;
-  
+
   std::string part1 = "GET / HTTP/1.1\r\nTest-Header";
   std::string part2 = ": value\r\n\r\n";
-  
+
   EXPECT_FALSE(localParser.feed(part1.c_str(), part1.length()));
   EXPECT_TRUE(localParser.feed(part2.c_str(), part2.length()));
-  
+
   HTTPRequest result = localParser.createRequest();
   EXPECT_EQ(result.getHeader("Test-Header"), "value");
 }
@@ -1360,15 +1388,16 @@ TEST_F(HTTPRequestParserTest, HeaderNameValueBoundary) {
 // isComplete関数のエッジケースのテスト
 TEST_F(HTTPRequestParserTest, IsCompleteEdgeCases) {
   HTTPRequestParser localParser;
-  
+
   // まだ何もフィードしていない
   EXPECT_FALSE(localParser.isComplete());
-  
+
   // 不完全なリクエスト
   std::string partialRequest = "GET / HTTP/1.1\r\n";
-  EXPECT_FALSE(localParser.feed(partialRequest.c_str(), partialRequest.length()));
+  EXPECT_FALSE(
+      localParser.feed(partialRequest.c_str(), partialRequest.length()));
   EXPECT_FALSE(localParser.isComplete());
-  
+
   // 完全なリクエスト
   std::string remainder = "Host: example.com\r\n\r\n";
   EXPECT_TRUE(localParser.feed(remainder.c_str(), remainder.length()));
@@ -1378,19 +1407,20 @@ TEST_F(HTTPRequestParserTest, IsCompleteEdgeCases) {
 // createRequest関数のエッジケースのテスト
 TEST_F(HTTPRequestParserTest, CreateRequestEdgeCases) {
   HTTPRequestParser localParser;
-  
+
   // 不完全なリクエストから作成を試みる
   std::string partialRequest = "GET / HTTP/1.1\r\n";
-  EXPECT_FALSE(localParser.feed(partialRequest.c_str(), partialRequest.length()));
-  
+  EXPECT_FALSE(
+      localParser.feed(partialRequest.c_str(), partialRequest.length()));
+
   // 不完全なリクエストからはデフォルトリクエストが返る
   HTTPRequest incompleteResult = localParser.createRequest();
   EXPECT_TRUE(incompleteResult.getMethod().empty());
-  
+
   // 完全なリクエストを提供
   std::string remainder = "Host: example.com\r\n\r\n";
   EXPECT_TRUE(localParser.feed(remainder.c_str(), remainder.length()));
-  
+
   // 今度は有効なリクエストが返る
   HTTPRequest completeResult = localParser.createRequest();
   EXPECT_EQ(completeResult.getMethod(), "GET");
