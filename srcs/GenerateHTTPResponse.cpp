@@ -214,13 +214,15 @@ void GenerateHTTPResponse::handleRequest(HTTPResponse& httpResponse) {
   if (isContain(getDirectiveValues("deny"), _httpRequest.getMethod())) {
     httpResponse.setHttpStatusCode(405);
   }
+  // リダイレクトが指定されている場合HttpStatusCodeを301に設定する
+  if (getDirectiveValue("return") != "") {
+    httpResponse.setHttpStatusCode(301);
+  }
 
   httpResponse.setHttpResponseBody(this->generateHttpResponseBody(
       httpResponse.getHttpStatusCode(), pageFound));
   if (pageFound == false) {
     httpResponse.setHttpStatusCode(404);
-  } else if (getDirectiveValue("return") != "") {
-    httpResponse.setHttpStatusCode(301);
   }
   httpResponse.setHttpStatusLine(
       this->generateHttpStatusLine(httpResponse.getHttpStatusCode()));
