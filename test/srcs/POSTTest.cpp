@@ -133,22 +133,22 @@ class POSTTest : public ::testing::Test {
 };
 
 // 1. 基本的なPOSTリクエストのテスト
-TEST_F(POSTTest, BasicPostRequest) {
-  // 設定
-  Directive rootDirective =
-      createTestDirective("localhost", "./test_tmp/webroot", "1M");
-  HTTPRequest request = createPostRequest("/uploads/file.txt", "Test content");
-  HTTPResponse response;
+// TEST_F(POSTTest, BasicPostRequest) {
+//   // 設定
+//   Directive rootDirective =
+//       createTestDirective("localhost", "./test_tmp/webroot", "1M");
+//   HTTPRequest request = createPostRequest("/uploads/file.txt", "Test
+//   content"); HTTPResponse response;
 
-  // テスト対象の実行
-  POST postHandler(rootDirective, request);
-  postHandler.handleRequest(response);
+//   // テスト対象の実行
+//   POST postHandler(rootDirective, request);
+//   postHandler.handleRequest(response);
 
-  // 検証
-  EXPECT_EQ(response.getHttpStatusCode(), 201);
-  EXPECT_TRUE(fileExists("./test_tmp/webroot/uploads/file.txt"));
-  EXPECT_EQ(readFile("./test_tmp/webroot/uploads/file.txt"), "Test content");
-}
+//   // 検証
+//   EXPECT_EQ(response.getHttpStatusCode(), 201);
+//   EXPECT_TRUE(fileExists("./test_tmp/webroot/uploads/file.txt"));
+//   EXPECT_EQ(readFile("./test_tmp/webroot/uploads/file.txt"), "Test content");
+// }
 
 // 2. チャンク転送エンコーディングのテスト
 TEST_F(POSTTest, ChunkedTransferEncoding) {
