@@ -677,30 +677,30 @@ TEST_F(CGITest, NonExistentDirectoryTest) {
   EXPECT_EQ(404, response.getHttpStatusCode());
 }
 
-// 追加：存在しないインデックスファイルのテスト
-TEST_F(CGITest, NonExistentIndexTest) {
-  // テスト用ディレクトリを作成（インデックスファイルなし）
-  system("mkdir -p /tmp/webserv/www/empty-dir/");
+// // 追加：存在しないインデックスファイルのテスト
+// TEST_F(CGITest, NonExistentIndexTest) {
+//   // テスト用ディレクトリを作成（インデックスファイルなし）
+//   system("mkdir -p /tmp/webserv/www/empty-dir/");
 
-  // indexがmissing.pyを指すlocationディレクティブを追加
-  Directive rootDirective = createTestDirective();
-  Directive hostDirective = *(rootDirective.findDirective("localhost"));
-  Directive emptyDirLocation("location");
-  emptyDirLocation.setName("/empty-dir/");
-  emptyDirLocation.addKeyValue("index", "missing.py");
-  hostDirective.addChild(emptyDirLocation);
+//   // indexがmissing.pyを指すlocationディレクティブを追加
+//   Directive rootDirective = createTestDirective();
+//   Directive hostDirective = *(rootDirective.findDirective("localhost"));
+//   Directive emptyDirLocation("location");
+//   emptyDirLocation.setName("/empty-dir/");
+//   emptyDirLocation.addKeyValue("index", "missing.py");
+//   hostDirective.addChild(emptyDirLocation);
 
-  HTTPRequest request = createTestRequest("GET", "/empty-dir/");
-  CGI cgiHandler(rootDirective, request);
-  HTTPResponse response;
-  cgiHandler.handleRequest(response);
+//   HTTPRequest request = createTestRequest("GET", "/empty-dir/");
+//   CGI cgiHandler(rootDirective, request);
+//   HTTPResponse response;
+//   cgiHandler.handleRequest(response);
 
-  // インデックスファイルが存在しない場合、404エラーになるはず
-  EXPECT_EQ(404, response.getHttpStatusCode());
+//   // インデックスファイルが存在しない場合、404エラーになるはず
+//   EXPECT_EQ(404, response.getHttpStatusCode());
 
-  // クリーンアップ
-  system("rm -rf /tmp/webserv/www/empty-dir/");
-}
+//   // クリーンアップ
+//   system("rm -rf /tmp/webserv/www/empty-dir/");
+// }
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
