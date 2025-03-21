@@ -100,7 +100,7 @@ void RunServer::handle_client_data(size_t client_fd, std::string receivedPort) {
     get_poll_fds().erase(get_poll_fds().begin() + client_fd);
     return;
   }
-
+  Directive *rootDirective = NULL;
   buffer[bytes_read] = '\0';
   try {
     // HTTPリクエストをパース
@@ -116,7 +116,7 @@ void RunServer::handle_client_data(size_t client_fd, std::string receivedPort) {
     HTTPRequest httpRequest = parser.createRequest();
     // ConfigからDirectiveを取得
     TOMLParser toml_parser;
-    Directive *rootDirective = toml_parser.parseFromFile(getConfPath());
+    rootDirective = toml_parser.parseFromFile(getConfPath());
     if (rootDirective == NULL)
       throw std::invalid_argument("Failed to parse Conf");
 
@@ -146,6 +146,7 @@ void RunServer::handle_client_data(size_t client_fd, std::string receivedPort) {
   } catch (const std::exception &e) {
     std::cerr << "Error handling client data: " << e.what() << std::endl;
   }
+  delete rootDirective;
   // Connection: closeの場合は接続を閉じる
   close(get_poll_fds()[client_fd].fd);
   get_poll_fds().erase(get_poll_fds().begin() + client_fd);
