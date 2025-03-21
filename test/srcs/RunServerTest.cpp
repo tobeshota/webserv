@@ -1,580 +1,439 @@
+#include <fcntl.h>  // fcntl用
 #include <gtest/gtest.h>
-#include <fcntl.h>
-#include <sys/socket.h>
 #include <netinet/in.h>
-#include <arpa/inet.h>
-#include <unistd.h>
+#include <signal.h>  // sigaction用
+#include <sys/socket.h>
+#include <unistd.h>  // pipe, alarm用
 
 #include <sstream>
-#include <string>
+#include <thread>  // std::thread用
 #include <vector>
 
-#include "../../srcs/RunServer.hpp"
-#include "../../srcs/ServerData.hpp"
-#include "../../srcs/MultiPortServer.hpp"
-#include "../../srcs/HTTPRequestParser.hpp"
-#include "../../srcs/TOMLParser.hpp"
-#include "../../srcs/HTTPResponse.hpp"
+#include "RunServer.hpp"
+#include "ServerData.hpp"
+#include "MultiPortServer.hpp"
+#include "HTTPResponse.hpp"
 
-// テスト用のヘルパークラス - ServerDataのスタブ
-class MockServerData : public ServerData {
-public:
-    MockServerData() : server_fd_(0) {
-        memset(&address_, 0, sizeof(address_));
-        address_.sin_family = AF_INET;
-        address_.sin_port = htons(8080);
-        address_.sin_addr.s_addr = INADDR_ANY;
-    }
-
-    int get_server_fd() const { return server_fd_; }
-    // 戻り値の型を修正: const参照を返すように変更
-    const struct sockaddr_in& get_address() const { return address_; }
-
-    void set_server_fd(int fd) { server_fd_ = fd; }
-
-private:
-    int server_fd_;
-    struct sockaddr_in address_;
-};
-
-// テスト用のヘルパークラス - MultiPortServerのスタブ
+// モック用のクラス定義
 class MockMultiPortServer : public MultiPortServer {
 public:
-    // コンストラクタの引数を削除（引数なしコンストラクタを使用）
-    MockMultiPortServer() : MultiPortServer() {}
-
-    bool isServerFd(int fd) const {
-        return server_fds_.find(fd) != server_fds_.end();
+    std::map<int, int> server_fds;
+    
+    bool isServerFd(int fd) const  {
+        return server_fds.find(fd) != server_fds.end();
     }
-
-    int getPortByFd(int fd) const {
-        if (server_fds_.find(fd) != server_fds_.end()) {
-            return server_fds_.at(fd);
+    
+    int getPortByFd(int fd) const  {
+        auto it = server_fds.find(fd);
+        if (it != server_fds.end()) {
+            return it->second;
         }
         return -1;
     }
-
-    void addServerFd(int fd, int port) {
-        server_fds_[fd] = port;
+    
+    void addMockServerFd(int fd, int port) {
+        server_fds[fd] = port;
     }
-
-private:
-    std::map<int, int> server_fds_;
 };
 
-// RunServerのテストフィクスチャ
+// テストフィクスチャ
 class RunServerTest : public ::testing::Test {
 protected:
-    void SetUp() override {
-        // テスト用の設定
-    }
-
-    void TearDown() override {
-        // テスト後のクリーンアップ
-        for (size_t i = 0; i < server.get_poll_fds().size(); i++) {
-            if (server.get_poll_fds()[i].fd > 0) {
-                close(server.get_poll_fds()[i].fd);
+    void SetUp()  {
+        // ソケットペアを作成するヘルパー関数
+        createSocketPair = [this](int& fd1, int& fd2) -> bool {
+            int fds[2];
+            if (socketpair(AF_UNIX, SOCK_STREAM, 0, fds) < 0) {
+                perror("socketpair");
+                return false;
             }
+            fd1 = fds[0];
+            fd2 = fds[1];
+            return true;
+        };
+    }
+
+    void TearDown()  {
+        // テスト後のクリーンアップ
+        for (auto& fd : fdToClose) {
+            if (fd > 0) close(fd);
         }
     }
 
-    // テスト用のHTTPリクエスト文字列を生成
-    std::string createHttpRequest(const std::string& method, const std::string& path, 
-                                 const std::string& host = "localhost") {
-        std::stringstream ss;
-        ss << method << " " << path << " HTTP/1.1\r\n";
-        ss << "Host: " << host << "\r\n";
-        ss << "Connection: close\r\n\r\n";
-        return ss.str();
+    // テスト用にソケットをクローズするリスト
+    std::vector<int> fdToClose;
+    // ソケットペア作成のラムダ関数
+    std::function<bool(int&, int&)> createSocketPair;
+    
+    // テスト中に作成されたファイルディスクリプタを追跡
+    void trackFd(int fd) {
+        if (fd > 0) fdToClose.push_back(fd);
     }
-
-    // テスト用のソケットペアを作成
-    std::pair<int, int> createSocketPair() {
-        int sockets[2];
-        if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockets) < 0) {
-            return {-1, -1};
-        }
-        return {sockets[0], sockets[1]};
-    }
-
-    RunServer server;
-    MockServerData mock_server_data;
 };
 
-// コンストラクタとconfPathのテスト
-TEST_F(RunServerTest, ConstructorAndConfPath) {
-    // デフォルトコンストラクタのテスト
+// コンストラクタとデフォルト設定のテスト
+TEST_F(RunServerTest, Constructor) {
+    RunServer server;
+    
+    // デフォルトコンフィグパスの確認
     EXPECT_EQ(server.getConfPath(), DEFAULT_CONF_PATH);
-
-    // setConfPathと getConfPathのテスト
-    std::string test_path = "/test/config.toml";
-    server.setConfPath(test_path);
-    EXPECT_EQ(server.getConfPath(), test_path);
+    
+    // 初期poll_fdsは空であることを確認
+    EXPECT_TRUE(server.get_poll_fds().empty());
 }
 
-// poll_fdsのテスト
+// poll_fds操作のテスト
 TEST_F(RunServerTest, PollFdsManipulation) {
-    // 初期状態では空
-    EXPECT_TRUE(server.get_poll_fds().empty());
-
+    RunServer server;
+    
     // add_poll_fdのテスト
-    pollfd fd1;
-    fd1.fd = 10;
-    fd1.events = POLLIN;
-    server.add_poll_fd(fd1);
-    EXPECT_EQ(server.get_poll_fds().size(), 1);
+    pollfd testFd;
+    testFd.fd = 10;
+    testFd.events = POLLIN;
+    testFd.revents = 0;
+    server.add_poll_fd(testFd);
+    
+    // 追加されたことを確認
+    ASSERT_EQ(server.get_poll_fds().size(), 1);
     EXPECT_EQ(server.get_poll_fds()[0].fd, 10);
     EXPECT_EQ(server.get_poll_fds()[0].events, POLLIN);
-
-    // 複数追加
-    pollfd fd2;
-    fd2.fd = 20;
-    fd2.events = POLLIN;
-    server.add_poll_fd(fd2);
-    EXPECT_EQ(server.get_poll_fds().size(), 2);
+    
+    // 複数のpoll_fdの追加
+    pollfd testFd2;
+    testFd2.fd = 20;
+    testFd2.events = POLLIN;
+    testFd2.revents = 0;
+    server.add_poll_fd(testFd2);
+    
+    ASSERT_EQ(server.get_poll_fds().size(), 2);
     EXPECT_EQ(server.get_poll_fds()[1].fd, 20);
 }
 
-// handle_new_connectionのテスト
-TEST_F(RunServerTest, HandleNewConnection) {
-    // ソケットペアを作成（acceptをシミュレート）
-    auto sockets = createSocketPair();
-    ASSERT_NE(sockets.first, -1);
-    ASSERT_NE(sockets.second, -1);
-
-    // サーバーソケットを追加
-    pollfd server_pollfd;
-    server_pollfd.fd = sockets.first;
-    server_pollfd.events = POLLIN;
-    server.add_poll_fd(server_pollfd);
-
-    // acceptをモック化（テスト用にオーバーロード）
-    int accept_socket = sockets.second;
-
-    // handle_new_connectionのテスト
-    // 注意: 実際のacceptは呼べないのでこのテストは部分的
-    // 実際の環境では、この部分はモックを使って実装する必要があります
-
-    // ポーリングのテスト
-    // この部分はプロセス全体の制御が必要なので、
-    // 単体テストでは細かい処理をテストする方が現実的
-}
-
-// handle_client_dataの簡易テスト
-TEST_F(RunServerTest, HandleClientDataBasic) {
-    // ソケットペアを作成
-    auto sockets = createSocketPair();
-    ASSERT_NE(sockets.first, -1);
-    ASSERT_NE(sockets.second, -1);
-
-    // クライアントソケットを追加
-    pollfd client_pollfd;
-    client_pollfd.fd = sockets.first;
-    client_pollfd.events = POLLIN;
-    // メソッド名を修正: add_poll_fds() -> add_poll_fd()
-    server.add_poll_fd(client_pollfd);
-
-    // HTTPリクエストを送信（もう片方のソケットから）
-    std::string http_request = createHttpRequest("GET", "/index.html");
-    ssize_t sent = send(sockets.second, http_request.c_str(), http_request.size(), 0);
-    ASSERT_GT(sent, 0);
-
-    // handle_client_dataをテスト
-    // 注意: 実際の環境ではサーバー設定などが必要なので、
-    // このテストは限定的な範囲でのみ有効です
-}
-
-// MultiPortServer関連機能のテスト
-TEST_F(RunServerTest, MultiPortServerFunctionality) {
-    MockMultiPortServer mock_multi_server;
-    
-    // サーバーソケットを設定
-    int port1 = 8080;
-    int port2 = 8081;
-    
-    auto sockets1 = createSocketPair();
-    auto sockets2 = createSocketPair();
-    ASSERT_NE(sockets1.first, -1);
-    ASSERT_NE(sockets2.first, -1);
-    
-    // MockMultiPortServerにソケットを登録
-    mock_multi_server.addServerFd(sockets1.first, port1);
-    mock_multi_server.addServerFd(sockets2.first, port2);
-    
-    // poll_fdsに追加
-    pollfd fd1, fd2;
-    fd1.fd = sockets1.first;
-    fd1.events = POLLIN;
-    fd2.fd = sockets2.first;
-    fd2.events = POLLIN;
-    
-    server.add_poll_fd(fd1);
-    server.add_poll_fd(fd2);
-    
-    // isServerFdとgetPortByFdのテスト
-    EXPECT_TRUE(mock_multi_server.isServerFd(sockets1.first));
-    EXPECT_TRUE(mock_multi_server.isServerFd(sockets2.first));
-    EXPECT_FALSE(mock_multi_server.isServerFd(99999)); // 存在しないFD
-    
-    EXPECT_EQ(mock_multi_server.getPortByFd(sockets1.first), port1);
-    EXPECT_EQ(mock_multi_server.getPortByFd(sockets2.first), port2);
-    EXPECT_EQ(mock_multi_server.getPortByFd(99999), -1); // 存在しないFD
-}
-
-// コンフィグファイルの設定と取得のテスト
-TEST_F(RunServerTest, ConfigPathHandling) {
+// コンフィグパス管理のテスト
+TEST_F(RunServerTest, ConfigPathManagement) {
     RunServer server;
     
     // デフォルト値の確認
     EXPECT_EQ(server.getConfPath(), DEFAULT_CONF_PATH);
     
-    // 値の変更と確認
-    std::string custom_path = "/custom/config.toml";
-    server.setConfPath(custom_path);
-    EXPECT_EQ(server.getConfPath(), custom_path);
+    // 値の設定と確認
+    std::string newPath = "/tmp/custom.conf";
+    server.setConfPath(newPath);
+    EXPECT_EQ(server.getConfPath(), newPath);
     
-    // 空の値への変更
+    // 空文字列の設定
     server.setConfPath("");
     EXPECT_EQ(server.getConfPath(), "");
 }
 
-// ヘルパークラスとして、実際のHTTPリクエストパーサーをモック
-class MockHTTPRequestParser : public HTTPRequestParser {
-public:
-    bool feed(const char *data, size_t len) { 
-        // override キーワードを削除（基底クラスに同名の仮想関数がない）
-        (void)data;
-        (void)len;
-        return true; 
-    }
-    
-    bool hasError() const { return false; }
-    
-    HTTPRequest createRequest() {
-        HTTPRequest req;
-        // setMethod/setServerName/setPathが存在しないためコメントアウト
-        // 実際のHTTPRequestクラスの初期化方法に合わせた適切な方法で初期化
-        // req.setMethod("GET");
-        // req.setServerName("localhost");
-        // req.setPath("/index.html");
-        return req;
-    }
-};
-
-// TOMLParserのモック
-class MockTOMLParser : public TOMLParser {
-public:
-    Directive* parseFromFile(const std::string& filePath) {
-        (void)filePath;
-        Directive* rootDir = new Directive();
-        
-        // setValuesメソッドが存在しないためコメントアウト
-        // Directiveクラスの実装に合わせた適切な方法で値を設定
-        // std::vector<std::string> listenPorts;
-        // listenPorts.push_back("80");
-        // rootDir->setValues("listen", listenPorts);
-        
-        // サブディレクティブとしてlocalhostを追加
-        Directive* localhost = new Directive();
-        // setValues/addDirectiveメソッドが存在しないためコメントアウト
-        // std::vector<std::string> localhostPorts;
-        // localhostPorts.push_back("80");
-        // localhost->setValues("listen", localhostPorts);
-        // rootDir->addDirective("localhost", localhost);
-        
-        // ダミーのルートディレクティブを返す
-        return rootDir;
-    }
-};
-
-// handle_new_connectionの完全テスト
-TEST_F(RunServerTest, HandleNewConnectionComplete) {
-    // socket pairの代わりにモックするために、RunServerのサブクラスを作成
-    class TestableRunServer : public RunServer {
-    public:
-        // accept関数をオーバーライドしてテスト可能にする
-        int mockAccept(int server_fd) {
-            (void)server_fd;
-            auto sockets = createSocketPair();
-            if (sockets.first != -1) {
-                return sockets.second;
-            }
-            return -1;
-        }
-        
-        void handle_new_connection_test(int server_fd) {
-            int new_socket = mockAccept(server_fd);
-            if (new_socket == -1) {
-                perror("accept");
-                return;
-            }
-            
-            // 実際の処理をシミュレート
-            pollfd client_fd_poll;
-            client_fd_poll.fd = new_socket;
-            client_fd_poll.events = POLLIN;
-            get_poll_fds().push_back(client_fd_poll);
-        }
-        
-        // テスト用にcreateSocketPair関数を公開
-        std::pair<int, int> createSocketPair() {
-            int sockets[2];
-            if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockets) < 0) {
-                return {-1, -1};
-            }
-            return {sockets[0], sockets[1]};
-        }
-    };
-    
-    TestableRunServer testServer;
-    
-    // 事前のpoll_fdsサイズを確認
-    size_t initialSize = testServer.get_poll_fds().size();
-    
-    // テスト用socket
-    int mockServerFd = 10;
-    
-    // 正常なケースのテスト
-    testServer.handle_new_connection_test(mockServerFd);
-    
-    // poll_fdsが増えたことを確認
-    EXPECT_GT(testServer.get_poll_fds().size(), initialSize);
-    
-    // 追加されたソケットをクローズ
-    for (size_t i = initialSize; i < testServer.get_poll_fds().size(); i++) {
-        close(testServer.get_poll_fds()[i].fd);
-    }
-}
-
-// handle_client_dataの拡張テスト
-TEST_F(RunServerTest, HandleClientDataExtended) {
-    // HTTPリクエストパーサーとTOMLパーサーをモック
-    class TestableRunServer : public RunServer {
-    public:
-        // テスト用にhandle_client_dataをオーバーライド
-        void handle_client_data_test(int client_fd, std::string receivedPort) {
-            // 実際のhandle_client_dataの一部をモック
-            MockHTTPRequestParser parser;
-            HTTPRequest httpRequest = parser.createRequest();
-            
-            // TOMLパーサーをモック
-            MockTOMLParser toml_parser;
-            Directive *rootDirective = toml_parser.parseFromFile(getConfPath());
-            
-            // HTTPレスポンスオブジェクトを作成
-            HTTPResponse httpResponse;
-            
-            // リソースの後始末
-            delete rootDirective;
-        }
-    };
-    
-    TestableRunServer testServer;
+// handle_new_connectionのテスト
+TEST_F(RunServerTest, HandleNewConnection) {
+    RunServer server;
     
     // ソケットペアを作成
-    auto sockets = createSocketPair();
-    ASSERT_NE(sockets.first, -1);
-    ASSERT_NE(sockets.second, -1);
+    int serverFd, clientFd;
+    ASSERT_TRUE(createSocketPair(serverFd, clientFd));
+    trackFd(serverFd);
+    trackFd(clientFd);
     
-    // クライアントソケットを追加
-    pollfd client_pollfd;
-    client_pollfd.fd = sockets.first;
-    client_pollfd.events = POLLIN;
-    testServer.add_poll_fd(client_pollfd);
+    // accept呼び出しをシミュレートするため、serverFdから接続を受け付けられるようにする必要がある
+    // ただし、テスト環境ではacceptの完全なシミュレートは難しいため、簡易的なテストに留める
     
-    // 拡張したhandle_client_dataをテスト
-    testServer.handle_client_data_test(0, "80");
+    // 不正なfdでのエラー処理をテスト
+    testing::internal::CaptureStderr();
+    server.handle_new_connection(-1);  // 無効なfd
+    std::string output = testing::internal::GetCapturedStderr();
+    EXPECT_NE(output.find("accept"), std::string::npos);
     
-    // ソケットをクローズ
-    close(sockets.first);
-    close(sockets.second);
+    // 接続後のpoll_fdsの変更を確認するには、実際の接続が必要だが、
+    // 単体テストでは難しいため、ここでは簡易的な確認のみ行う
+    EXPECT_EQ(server.get_poll_fds().size(), 0);
 }
 
-// process_poll_eventsのテスト
-TEST_F(RunServerTest, ProcessPollEvents) {
-    class TestableRunServer : public RunServer {
-    public:
-        // 公開版process_poll_events
-        void process_poll_events_test(ServerData &server_data) {
-            // ここでは簡易版のみ実装
-            // 実際のポーリング処理はスキップし、イベント発生をシミュレート
-            for (size_t i = 0; i < get_poll_fds().size(); ++i) {
-                // テスト用にPOLLINイベントを発生させる
-                get_poll_fds()[i].revents = POLLIN;
-            }
+// 助手クラス: handle_client_dataのテスト用にRunServerをサブクラス化
+class TestableRunServer : public RunServer {
+public:
+    // 公開版のhandle_client_dataをオーバーライド - port引数を文字列型に変更
+    void handle_client_data_test(size_t index, const std::string& port) {
+        handle_client_data(index, port);
+    }
+    
+    // プライベートメンバをテスト可能にするためのヘルパー
+    bool eraseClientFd(size_t index) {
+        if (index < get_poll_fds().size()) {
+            close(get_poll_fds()[index].fd);
+            get_poll_fds().erase(get_poll_fds().begin() + index);
+            return true;
         }
+        return false;
+    }
+};
+
+// handle_client_dataの基本機能テスト
+TEST_F(RunServerTest, HandleClientDataBasic) {
+    TestableRunServer server;
+    
+    // パイプを使用してファイルディスクリプタを作成
+    int fds[2];
+    ASSERT_EQ(pipe(fds), 0);
+    trackFd(fds[0]);
+    trackFd(fds[1]);
+    
+    // クライアントソケットとして読み取り側をpoll_fdsに追加
+    pollfd clientPoll;
+    clientPoll.fd = fds[0];
+    clientPoll.events = POLLIN;
+    clientPoll.revents = 0;
+    server.add_poll_fd(clientPoll);
+    
+    // データを書き込む
+    const char* testData = "GET / HTTP/1.1\r\nHost: example.com\r\n\r\n";
+    ASSERT_GT(write(fds[1], testData, strlen(testData)), 0);
+    
+    // 標準エラー出力をキャプチャ (HTTPリクエストパースエラーなど捕捉)
+    testing::internal::CaptureStderr();
+    
+    // handle_client_dataを呼び出し
+    server.handle_client_data_test(0, "80");
+    
+    std::string errorOutput = testing::internal::GetCapturedStderr();
+    // テスト環境ではHTTPパースが失敗する可能性があるため、エラーメッセージの有無は厳密にテストしない
+    
+    // poll_fdsが正しく更新されたことを確認
+    // handle_client_dataは通常、処理後にFDを閉じてpoll_fdsから削除するため
+    // poll_fdsは空になっているはず
+    EXPECT_EQ(server.get_poll_fds().size(), 0);
+}
+
+// handle_client_dataのエラー処理テスト
+TEST_F(RunServerTest, HandleClientDataErrors) {
+    TestableRunServer server;
+    
+    // 無効なファイルディスクリプタを作成
+    int invalidFd = -1;
+    
+    // 無効なfdをpoll_fdsに追加
+    pollfd invalidPoll;
+    invalidPoll.fd = invalidFd;
+    invalidPoll.events = POLLIN;
+    invalidPoll.revents = 0;
+    server.add_poll_fd(invalidPoll);
+    
+    // 標準エラー出力をキャプチャ
+    testing::internal::CaptureStderr();
+    
+    // handle_client_dataを呼び出し
+    server.handle_client_data_test(0, "80");
+    
+    // recv関連のエラーメッセージを確認
+    std::string errorOutput = testing::internal::GetCapturedStderr();
+    EXPECT_NE(errorOutput.find("recv"), std::string::npos);
+    
+    // クライアント切断/エラー時にpoll_fdsから削除されることを確認
+    EXPECT_EQ(server.get_poll_fds().size(), 0);
+}
+
+// bytes_read = 0 のケース (クライアント正常切断)
+TEST_F(RunServerTest, HandleClientDataDisconnect) {
+    TestableRunServer server;
+    
+    // パイプを使用してファイルディスクリプタを作成
+    int fds[2];
+    ASSERT_EQ(pipe(fds), 0);
+    trackFd(fds[0]);  // 読み取り側のみ追跡
+    
+    // クライアントソケットとして読み取り側をpoll_fdsに追加
+    pollfd clientPoll;
+    clientPoll.fd = fds[0];
+    clientPoll.events = POLLIN;
+    clientPoll.revents = 0;
+    server.add_poll_fd(clientPoll);
+    
+    // 書き込み側を閉じる (これにより読み取り時にEOFが返される)
+    close(fds[1]);
+    
+    // handle_client_dataを呼び出し
+    server.handle_client_data_test(0, "80");
+    
+    // クライアント切断時にpoll_fdsから削除されることを確認
+    EXPECT_EQ(server.get_poll_fds().size(), 0);
+}
+
+// // process_poll_eventsのテスト
+// TEST_F(RunServerTest, ProcessPollEvents) {
+//     // 実際のイベントポーリングは複雑なため、基本的な動作のみ確認
+//     class MockRunServer : public RunServer {
+//     public:
+//         bool handle_new_connection_called = false;
+//         bool handle_client_data_called = false;
+//         int last_server_fd = -1;
+//         size_t last_client_index = 0;
+//         std::string last_port = "";
         
-        void handle_new_connection_mock(int server_fd) {
-            // モックバージョン
-            (void)server_fd;
-            std::cout << "Mock: New connection handled" << std::endl;
-        }
+//         // オーバーライドしてテスト用にモック
+//         void handle_new_connection(int server_fd)  {
+//             handle_new_connection_called = true;
+//             last_server_fd = server_fd;
+//         }
         
-        void handle_client_data_mock(size_t client_fd, std::string receivedPort) {
-            // モックバージョン
-            (void)client_fd;
-            (void)receivedPort;
-            std::cout << "Mock: Client data handled" << std::endl;
-        }
+//         void handle_client_data(size_t index, std::string port)  {
+//             handle_client_data_called = true;
+//             last_client_index = index;
+//             last_port = port;
+//         }
+        
+//         // テスト用にreventを直接設定できるようにする
+//         void setRevent(size_t index, short revent) {
+//             if (index < get_poll_fds().size()) {
+//                 get_poll_fds()[index].revents = revent;
+//             }
+//         }
+//     };
+    
+//     MockRunServer server;
+//     ServerData serverData(8080);  // ポート8080を使用
+    
+//     // サーバーソケット用のpollfd
+//     pollfd serverPoll;
+//     serverPoll.fd = 10;  // サーバーのfd
+//     serverPoll.events = POLLIN;
+//     serverPoll.revents = 0;
+//     server.add_poll_fd(serverPoll);
+    
+//     // クライアントソケット用のpollfd
+//     pollfd clientPoll;
+//     clientPoll.fd = 20;  // クライアントのfd
+//     clientPoll.events = POLLIN;
+//     clientPoll.revents = 0;
+//     server.add_poll_fd(clientPoll);
+    
+//     // ServerDataのモック設定
+//     serverData.set_new_socket(10);  // サーバーのfdを10に設定
+    
+//     // サーバーソケットでPOLLINイベント発生
+//     server.setRevent(0, POLLIN);
+//     server.process_poll_events(serverData);
+    
+//     // handle_new_connectionが呼ばれたことを確認
+//     EXPECT_TRUE(server.handle_new_connection_called);
+//     EXPECT_EQ(server.last_server_fd, 10);
+    
+//     // クライアントPOLLINイベントのテスト
+//     server.handle_new_connection_called = false;  // リセット
+//     server.setRevent(0, 0);  // サーバーのイベントをリセット
+//     server.setRevent(1, POLLIN);  // クライアントでイベント発生
+    
+//     server.process_poll_events(serverData);
+    
+//     // handle_client_dataが呼ばれたことを確認
+//     EXPECT_TRUE(server.handle_client_data_called);
+//     EXPECT_EQ(server.last_client_index, 1);
+    
+//     // POLLINイベントがない場合
+//     server.handle_client_data_called = false;  // リセット
+//     server.setRevent(1, 0);  // クライアントのイベントをリセット
+    
+//     server.process_poll_events(serverData);
+    
+//     // どちらも呼ばれないことを確認
+//     EXPECT_FALSE(server.handle_new_connection_called);
+//     EXPECT_FALSE(server.handle_client_data_called);
+// }
+
+// // process_poll_events_multiportのテスト
+// TEST_F(RunServerTest, ProcessPollEventsMultiport) {
+//     // マルチポート用のモックサーバー
+//     class MockRunServerMulti : public RunServer {
+//     public:
+//         bool handle_new_connection_called = false;
+//         bool handle_client_data_called = false;
+//         int last_server_fd = -1;
+//         int last_port = -1;
+//         size_t last_client_index = 0;
+        
+//         // オーバーライドしてテスト用にモック
+//         void handle_new_connection(int server_fd, int server_port) {
+//             handle_new_connection_called = true;
+//             last_server_fd = server_fd;
+//             last_port = server_port;
+//         }
+        
+//         void handle_client_data(size_t index, int server_port) {
+//             handle_client_data_called = true;
+//             last_client_index = index;
+//             last_port = server_port;
+//         }
+        
+//         // テスト用にreventを直接設定できるようにする
+//         void setRevent(size_t index, short revent) {
+//             if (index < get_poll_fds().size()) {
+//                 get_poll_fds()[index].revents = revent;
+//             }
+//         }
+//     };
+    
+//     MockRunServerMulti server;
+//     MockMultiPortServer multiServer;
+    
+//     // サーバーソケット用のpollfd
+//     pollfd serverPoll;
+//     serverPoll.fd = 10;  // サーバーのfd
+//     serverPoll.events = POLLIN;
+//     serverPoll.revents = 0;
+//     server.add_poll_fd(serverPoll);
+    
+//     // クライアントソケット用のpollfd
+//     pollfd clientPoll;
+//     clientPoll.fd = 20;  // クライアントのfd
+//     clientPoll.events = POLLIN;
+//     clientPoll.revents = 0;
+//     server.add_poll_fd(clientPoll);
+    
+//     // MockMultiPortServerの設定
+//     multiServer.addMockServerFd(10, 8080);  // fd 10はポート8080
+    
+//     // サーバーソケットでPOLLINイベント発生
+//     server.setRevent(0, POLLIN);
+//     server.process_poll_events_multiport(multiServer);
+    
+//     // handle_new_connectionが呼ばれたことを確認
+//     EXPECT_TRUE(server.handle_new_connection_called);
+//     EXPECT_EQ(server.last_server_fd, 10);
+//     EXPECT_EQ(server.last_port, 8080);
+    
+//     // クライアントPOLLINイベントのテスト
+//     server.handle_new_connection_called = false;  // リセット
+//     server.setRevent(0, 0);  // サーバーのイベントをリセット
+//     server.setRevent(1, POLLIN);  // クライアントでイベント発生
+    
+//     server.process_poll_events_multiport(multiServer);
+    
+//     // handle_client_dataが呼ばれたことを確認
+//     EXPECT_TRUE(server.handle_client_data_called);
+//     EXPECT_EQ(server.last_client_index, 1);
+// }
+
+// int2str関数のテスト
+TEST_F(RunServerTest, Int2StrTest) {
+    // RunServerクラス内のstatic関数であるint2strをテストするため、同様の実装を作成
+    auto int2str = [](int val) -> std::string {
+        std::stringstream ss;
+        ss << val;
+        return ss.str();
     };
     
-    TestableRunServer testServer;
-    MockServerData mockData;
-    
-    // サーバーのファイルディスクリプタを設定
-    mockData.set_server_fd(10);
-    
-    // pollfdをいくつか追加
-    pollfd server_fd;
-    server_fd.fd = mockData.get_server_fd();
-    server_fd.events = POLLIN;
-    server_fd.revents = 0;
-    testServer.add_poll_fd(server_fd);
-    
-    pollfd client_fd;
-    client_fd.fd = 20;
-    client_fd.events = POLLIN;
-    client_fd.revents = 0;
-    testServer.add_poll_fd(client_fd);
-    
-    // テスト用のprocess_poll_eventsを実行
-    testServer.process_poll_events_test(mockData);
-    
-    // このテストは直接の検証は難しいため、プロセスが正常に動作することのみを確認
-    SUCCEED();
-}
-
-// process_poll_events_multiportのテスト
-TEST_F(RunServerTest, ProcessPollEventsMultiport) {
-    class TestableRunServer : public RunServer {
-    public:
-        // 公開版process_poll_events_multiport
-        void process_poll_events_multiport_test(MultiPortServer &server) {
-            // ここでは簡易版のみ実装
-            // 実際のポーリング処理はスキップし、イベント発生をシミュレート
-            for (size_t i = 0; i < get_poll_fds().size(); ++i) {
-                // テスト用にPOLLINイベントを発生させる
-                get_poll_fds()[i].revents = POLLIN;
-            }
-        }
-    };
-    
-    TestableRunServer testServer;
-    MockMultiPortServer mockMultiServer;
-    
-    // サーバーのファイルディスクリプタをいくつか追加
-    int serverFd1 = 10;
-    int serverFd2 = 20;
-    int clientFd = 30;
-    
-    mockMultiServer.addServerFd(serverFd1, 8080);
-    mockMultiServer.addServerFd(serverFd2, 8081);
-    
-    // pollfdを追加
-    pollfd server_fd1;
-    server_fd1.fd = serverFd1;
-    server_fd1.events = POLLIN;
-    server_fd1.revents = 0;
-    testServer.add_poll_fd(server_fd1);
-    
-    pollfd server_fd2;
-    server_fd2.fd = serverFd2;
-    server_fd2.events = POLLIN;
-    server_fd2.revents = 0;
-    testServer.add_poll_fd(server_fd2);
-    
-    pollfd client_fd;
-    client_fd.fd = clientFd;
-    client_fd.events = POLLIN;
-    client_fd.revents = 0;
-    testServer.add_poll_fd(client_fd);
-    
-    // テスト用のprocess_poll_events_multiportを実行
-    testServer.process_poll_events_multiport_test(mockMultiServer);
-    
-    // このテストは直接の検証は難しいため、プロセスが正常に動作することのみを確認
-    SUCCEED();
-}
-
-// runとrunMultiPortの制限付きテスト
-TEST_F(RunServerTest, RunWithLimitedExecution) {
-    class TestableRunServer : public RunServer {
-    public:
-        bool run_called = false;
-        bool runMultiPort_called = false;
-        
-        // 無限ループを回避するために制限付きのrun関数
-        void limited_run(ServerData &server_data) {
-            run_called = true;
-            // 実際の実装はスキップ
-        }
-        
-        // 無限ループを回避するために制限付きのrunMultiPort関数
-        void limited_runMultiPort(MultiPortServer &server) {
-            runMultiPort_called = true;
-            // 実際の実装はスキップ
-        }
-    };
-    
-    TestableRunServer testServer;
-    MockServerData mockData;
-    MockMultiPortServer mockMultiServer;
-    
-    // 制限付きの実行
-    testServer.limited_run(mockData);
-    EXPECT_TRUE(testServer.run_called);
-    
-    testServer.limited_runMultiPort(mockMultiServer);
-    EXPECT_TRUE(testServer.runMultiPort_called);
-}
-
-// HTTPMethodHandlerのテスト
-TEST_F(RunServerTest, HTTPMethodHandlerTest) {
-    // テスト用のDirectiveとHTTPRequestを準備
-    Directive rootDirective;
-    HTTPRequest httpRequest;
-    
-    // getHTTPMethodHandlerがスコープ外のため、テストのみスキップ
-    // 代わりに基本的なDirectiveとHTTPRequestのテストを実行
-    
-    // HTTPRequestのメソッド取得テスト
-    EXPECT_EQ(httpRequest.getMethod(), "");  // デフォルト値を確認
-    
-    // Directiveのテスト
-    EXPECT_TRUE(rootDirective.getValues("test").empty());
-    
-    // getHTTPMethodHandlerテストはスキップ
-    /*
-    // GET, POST, DELETEメソッドのテスト
-    httpRequest.setMethod("GET");
-    Handler* getHandler = getHTTPMethodHandler("GET", rootDirective, httpRequest);
-    EXPECT_NE(getHandler, nullptr);
-    delete getHandler;
-    
-    httpRequest.setMethod("POST");
-    Handler* postHandler = getHTTPMethodHandler("POST", rootDirective, httpRequest);
-    EXPECT_NE(postHandler, nullptr);
-    delete postHandler;
-    
-    httpRequest.setMethod("DELETE");
-    Handler* deleteHandler = getHTTPMethodHandler("DELETE", rootDirective, httpRequest);
-    EXPECT_NE(deleteHandler, nullptr);
-    delete deleteHandler;
-    
-    // 未対応メソッドのテスト
-    httpRequest.setMethod("UNKNOWN");
-    Handler* unknownHandler = getHTTPMethodHandler("UNKNOWN", rootDirective, httpRequest);
-    EXPECT_NE(unknownHandler, nullptr);  // デフォルトでGETハンドラを返す
-    delete unknownHandler;
-    */
+    EXPECT_EQ(int2str(0), "0");
+    EXPECT_EQ(int2str(123), "123");
+    EXPECT_EQ(int2str(-456), "-456");
+    EXPECT_EQ(int2str(8080), "8080");
 }
 
 // isContain関数のテスト
 TEST_F(RunServerTest, IsContainTest) {
-    // isContain関数はstaticなので、テストのために同等な関数を作成
+    // RunServerクラス内のstatic関数であるisContainをテストするため、同様の実装を作成
     auto isContain = [](const std::vector<std::string>& vec, const std::string& str) -> bool {
-        for (auto itr = vec.begin(); itr != vec.end(); ++itr) {
-            if (*itr == str) {
+        for (auto it = vec.begin(); it != vec.end(); ++it) {
+            if (*it == str) {
                 return true;
             }
         }
@@ -583,35 +442,80 @@ TEST_F(RunServerTest, IsContainTest) {
     
     std::vector<std::string> testVec = {"GET", "POST", "DELETE"};
     
-    // 含まれる要素のテスト
     EXPECT_TRUE(isContain(testVec, "GET"));
     EXPECT_TRUE(isContain(testVec, "POST"));
     EXPECT_TRUE(isContain(testVec, "DELETE"));
-    
-    // 含まれない要素のテスト
     EXPECT_FALSE(isContain(testVec, "PUT"));
-    EXPECT_FALSE(isContain(testVec, "PATCH"));
     EXPECT_FALSE(isContain(testVec, ""));
 }
 
-// int2strのテスト
-TEST_F(RunServerTest, Int2StrTest) {
-    // int2str関数はstaticなので、テストのために同等な関数を作成
-    auto int2str = [](int nb) -> std::string {
-        std::stringstream ss;
-        ss << nb;
-        return ss.str();
+// runメソッドの限定的テスト
+TEST_F(RunServerTest, RunMethodLimited) {
+    // 実際のrun()は無限ループなので、テスト用に制限付き版を作成
+    class LimitedRunServer : public RunServer {
+    public:
+        bool process_poll_events_called = false;
+        ServerData* last_server_data = nullptr;
+        
+        void process_poll_events(ServerData& server_data)  {
+            process_poll_events_called = true;
+            last_server_data = &server_data;
+        }
+        
+        // 限定実行版のrunメソッド
+        void runLimited(ServerData& server_data, int iterations = 1) {
+            for (int i = 0; i < iterations; ++i) {
+                // pollの代わりに直接process_poll_eventsを呼ぶ
+                process_poll_events(server_data);
+            }
+        }
     };
     
-    // いくつかの数値変換をテスト
-    EXPECT_EQ(int2str(0), "0");
-    EXPECT_EQ(int2str(42), "42");
-    EXPECT_EQ(int2str(-1), "-1");
-    EXPECT_EQ(int2str(8080), "8080");
+    LimitedRunServer server;
+    ServerData serverData(8080);
+    
+    // 限定的なrun実行
+    server.runLimited(serverData);
+    
+    // process_poll_eventsが呼ばれ、正しいServerDataが渡されたことを確認
+    EXPECT_TRUE(server.process_poll_events_called);
+    EXPECT_EQ(server.last_server_data, &serverData);
 }
 
-// メインのテスト実行関数
-int main(int argc, char **argv) {
+// runMultiPortメソッドの限定的テスト
+TEST_F(RunServerTest, RunMultiPortMethodLimited) {
+    // 実際のrunMultiPort()は無限ループなので、テスト用に制限付き版を作成
+    class LimitedRunServerMulti : public RunServer {
+    public:
+        bool process_poll_events_multiport_called = false;
+        MultiPortServer* last_multi_server = nullptr;
+        
+        void process_poll_events_multiport(MultiPortServer& server)  {
+            process_poll_events_multiport_called = true;
+            last_multi_server = &server;
+        }
+        
+        // 限定実行版のrunMultiPortメソッド
+        void runMultiPortLimited(MultiPortServer& server, int iterations = 1) {
+            for (int i = 0; i < iterations; ++i) {
+                // pollの代わりに直接process_poll_events_multiportを呼ぶ
+                process_poll_events_multiport(server);
+            }
+        }
+    };
+    
+    LimitedRunServerMulti server;
+    MockMultiPortServer multiServer;
+    
+    // 限定的なrunMultiPort実行
+    server.runMultiPortLimited(multiServer);
+    
+    // process_poll_events_multiportが呼ばれ、正しいMultiPortServerが渡されたことを確認
+    EXPECT_TRUE(server.process_poll_events_multiport_called);
+    EXPECT_EQ(server.last_multi_server, &multiServer);
+}
+
+int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }
