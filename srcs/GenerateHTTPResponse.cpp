@@ -162,7 +162,8 @@ std::vector<std::string> GenerateHTTPResponse::getDirectiveValues(
   return emptyVector;
 }
 
-std::string GenerateHTTPResponse::generateHttpResponseBody(const int status_code) {
+std::string GenerateHTTPResponse::generateHttpResponseBody(
+    const int status_code) {
   // DELETEメソッドがコールされた場合，HTTPレスポンスボディを空にする
   if (_httpRequest.getMethod() == "DELETE") return "";
 
@@ -204,8 +205,8 @@ void GenerateHTTPResponse::handleRequest(HTTPResponse& httpResponse) {
     httpResponse.setHttpStatusCode(301);
   }
 
-  httpResponse.setHttpResponseBody(this->generateHttpResponseBody(
-      httpResponse.getHttpStatusCode()));
+  httpResponse.setHttpResponseBody(
+      this->generateHttpResponseBody(httpResponse.getHttpStatusCode()));
   httpResponse.setHttpStatusLine(
       this->generateHttpStatusLine(httpResponse.getHttpStatusCode()));
   httpResponse.setHttpResponseHeader(
