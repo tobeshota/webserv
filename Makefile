@@ -6,7 +6,7 @@
 #    By: yoshimurahiro <yoshimurahiro@student.42    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/09/12 09:34:52 by tobeshota         #+#    #+#              #
-#    Updated: 2025/03/21 17:36:43 by yoshimurahi      ###   ########.fr        #
+#    Updated: 2025/03/21 17:51:10 by yoshimurahi      ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -88,27 +88,5 @@ coverage:
 
 doc:
 	make doc -C docs/ -f doc.mk
-
-bals:
-	# すべてのコンテナを停止
-	docker stop `docker ps -qa` | true
-	# すべてのコンテナとイメージを削除
-	docker rm `docker ps -qa` | true
-	docker rmi `docker images -qa` | true
-	docker system prune -f | true
-	# すべてのボリュームを削除
-	docker volume rm `docker volume ls -q` | true
-	docker volume prune -f | true
-	# すべてのネットワークを削除
-	docker network rm `docker network ls -q` | true
-	docker network prune -f | true
-
-
-status:
-	docker ps -a ; echo
-	docker image ls ; echo
-	docker volume ls ; echo
-	docker network ls ; echo
-	docker system df
 
 .PHONY:	all clean fclean re up run down fmt debug address test coverage doc leaks
