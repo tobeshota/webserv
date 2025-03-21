@@ -17,7 +17,7 @@ class GenerateHTTPResponse : public Handler {
   HTTPRequest _httpRequest;
   std::string generateHttpStatusLine(const int status_code);
   std::string generateHttpResponseHeader(const std::string& httpResponseBody);
-  std::string generateHttpResponseBody(const int status_code, bool& pageFound);
+  std::string generateHttpResponseBody(const int status_code);
   // utils
   std::string getSuccessPathForHttpResponseBody();
   std::string getErrorPathForHttpResponseBody(const int status_code);

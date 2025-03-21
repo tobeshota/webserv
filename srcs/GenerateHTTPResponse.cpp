@@ -163,7 +163,7 @@ std::vector<std::string> GenerateHTTPResponse::getDirectiveValues(
 }
 
 std::string GenerateHTTPResponse::generateHttpResponseBody(
-    const int status_code, bool& pageFound) {
+    const int status_code) {
   // DELETEメソッドがコールされた場合，HTTPレスポンスボディを空にする
   if (_httpRequest.getMethod() == "DELETE") return "";
 
@@ -175,7 +175,7 @@ std::string GenerateHTTPResponse::generateHttpResponseBody(
     httpResponseBody = readFile(CGI_PAGE);
   }
   // ディレクトリリスニングすべきか
-  else if (status_code == 200 && getDirectiveValue("autoindex") == "on" &&
+  else if (getDirectiveValue("autoindex") == "on" &&
            getDirectiveValue("root") != "") {
     ListenDirectory listenDirectory(getDirectiveValue("root") +
                                     _httpRequest.getURL());
@@ -190,9 +190,7 @@ std::string GenerateHTTPResponse::generateHttpResponseBody(
 
   // 読み取ったファイルが空の場合
   if (httpResponseBody.empty()) {
-    std::cout << "here" << std::endl;
     httpResponseBody = readFile(getErrorPathForHttpResponseBody(status_code));
-    pageFound = false;
   }
   return httpResponseBody;
 }
@@ -202,18 +200,13 @@ GenerateHTTPResponse::GenerateHTTPResponse(Directive rootDirective,
     : _rootDirective(rootDirective), _httpRequest(httpRequest) {}
 
 void GenerateHTTPResponse::handleRequest(HTTPResponse& httpResponse) {
-  bool pageFound = true;
-
   // リダイレクトが指定されている場合HttpStatusCodeを301に設定する
   if (getDirectiveValue("return") != "") {
     httpResponse.setHttpStatusCode(301);
   }
 
-  httpResponse.setHttpResponseBody(this->generateHttpResponseBody(
-      httpResponse.getHttpStatusCode(), pageFound));
-  if (pageFound == false) {
-    httpResponse.setHttpStatusCode(404);
-  }
+  httpResponse.setHttpResponseBody(
+      this->generateHttpResponseBody(httpResponse.getHttpStatusCode()));
   httpResponse.setHttpStatusLine(
       this->generateHttpStatusLine(httpResponse.getHttpStatusCode()));
   httpResponse.setHttpResponseHeader(
