@@ -192,17 +192,6 @@ std::string GenerateHTTPResponse::generateHttpResponseBody(
   return httpResponseBody;
 }
 
-// std::vector<std::string>の要素に"指定のメソッド"が含まれているか
-static bool isContain(std::vector<std::string> vec, std::string str) {
-  for (std::vector<std::string>::iterator itr = vec.begin(); itr != vec.end();
-       ++itr) {
-    if (*itr == str) {
-      return true;
-    }
-  }
-  return false;
-}
-
 GenerateHTTPResponse::GenerateHTTPResponse(Directive rootDirective,
                                            HTTPRequest httpRequest)
     : _rootDirective(rootDirective), _httpRequest(httpRequest) {}
@@ -210,10 +199,6 @@ GenerateHTTPResponse::GenerateHTTPResponse(Directive rootDirective,
 void GenerateHTTPResponse::handleRequest(HTTPResponse& httpResponse) {
   bool pageFound = true;
 
-  // メソッドが許可されていない場合HttpStatusCodeを405に設定する
-  if (isContain(getDirectiveValues("deny"), _httpRequest.getMethod())) {
-    httpResponse.setHttpStatusCode(405);
-  }
   // リダイレクトが指定されている場合HttpStatusCodeを301に設定する
   if (getDirectiveValue("return") != "") {
     httpResponse.setHttpStatusCode(301);
