@@ -168,9 +168,10 @@ std::string GenerateHTTPResponse::generateHttpResponseBody(
 
   std::string httpResponseBody;
 
-  // HTTPレスポンスがCGIの実行結果であるか
-  if (endsWith(_httpRequest.getURL(), ".py") ||
-      endsWith(_httpRequest.getURL(), ".sh")) {
+  std::cout << "status_code: " << status_code << std::endl;
+  // CGIは実行されたか（2xx番でないと実行されていない）
+  if (status_code / 100 == 2 && (endsWith(_httpRequest.getURL(), ".py") ||
+                                 endsWith(_httpRequest.getURL(), ".sh"))) {
     httpResponseBody = readFile(CGI_PAGE);
   }
   // ディレクトリリスニングすべきか
