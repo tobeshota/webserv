@@ -257,12 +257,6 @@ void POST::setHttpStatusCode(HTTPResponse& httpResponse,
     return;
   }
 
-  // ファイルの存在確認 - POSTは既存ファイルの更新のみ許可
-  if (!fileExists(fullPath)) {
-    httpResponse.setHttpStatusCode(404);  // Not Found
-    return;
-  }
-
   // ディレクトリの書き込み権限確認 - この確認を厳密に行う
   if (!hasWritePermission(dirPath)) {
     httpResponse.setHttpStatusCode(403);  // Forbidden
@@ -279,6 +273,167 @@ void POST::setHttpStatusCode(HTTPResponse& httpResponse,
   httpResponse.setHttpStatusCode(200);
 }
 
+// マルチパートフォームデータかどうか確認する関数
+bool POST::isMultipartForm() const {
+  std::string contentType = _httpRequest.getHeader("Content-Type");
+  return contentType.find("multipart/form-data") != std::string::npos;
+}
+
+// Content-Typeヘッダーから境界区切り文字を抽出する関数
+std::string POST::extractBoundary() const {
+  std::string contentType = _httpRequest.getHeader("Content-Type");
+  size_t boundaryPos = contentType.find("boundary=");
+
+  if (boundaryPos == std::string::npos) {
+    return "";
+  }
+
+  // "boundary=" の後の文字列を抽出
+  std::string boundary = contentType.substr(boundaryPos + 9);
+  // 余分なパラメータがある場合は除去
+  size_t endPos = boundary.find(";");
+  if (endPos != std::string::npos) {
+    boundary = boundary.substr(0, endPos);
+  }
+
+  return boundary;
+}
+
+// マルチパートフォームデータを解析する関数
+std::vector<POST::MultipartData> POST::parseMultipartFormData(
+    const std::string& body, const std::string& boundary) {
+  std::vector<MultipartData> result;
+
+  // 境界文字列の形式
+  std::string delimiter = "--" + boundary;
+  std::string endDelimiter = delimiter + "--";
+
+  size_t pos = body.find(delimiter);
+  if (pos == std::string::npos) {
+    return result;
+  }
+
+  while (pos != std::string::npos) {
+    // 次の境界位置を検索
+    size_t nextPos = body.find(delimiter, pos + delimiter.length());
+    if (nextPos == std::string::npos) {
+      // 終端の境界を確認
+      nextPos = body.find(endDelimiter, pos + delimiter.length());
+      if (nextPos == std::string::npos) {
+        break;
+      }
+    }
+
+    // 現在のパート部分を取得
+    std::string part = body.substr(pos + delimiter.length(),
+                                   nextPos - pos - delimiter.length());
+
+    // ヘッダーとコンテンツの区切り（空行）を検索
+    size_t headerEnd = part.find("\r\n\r\n");
+    if (headerEnd == std::string::npos) {
+      pos = nextPos;
+      continue;
+    }
+
+    // ヘッダー部分とコンテンツ部分に分離
+    std::string headers = part.substr(0, headerEnd);
+    std::string content = part.substr(headerEnd + 4);  // 4は\r\n\r\nの長さ
+
+    // 末尾の\r\nを削除
+    if (content.length() >= 2 &&
+        content.substr(content.length() - 2) == "\r\n") {
+      content = content.substr(0, content.length() - 2);
+    }
+
+    // Content-Dispositionヘッダーを解析
+    size_t cdPos = headers.find("Content-Disposition:");
+    if (cdPos != std::string::npos) {
+      // 行末までを取得
+      size_t cdEndPos = headers.find("\r\n", cdPos);
+      if (cdEndPos == std::string::npos) {
+        cdEndPos = headers.length();
+      }
+
+      std::string cdValue = headers.substr(cdPos, cdEndPos - cdPos);
+
+      // フィールド名を取得
+      std::string fieldName = "";
+      size_t namePos = cdValue.find("name=\"");
+      if (namePos != std::string::npos) {
+        size_t nameEndPos = cdValue.find("\"", namePos + 6);
+        if (nameEndPos != std::string::npos) {
+          fieldName = cdValue.substr(namePos + 6, nameEndPos - namePos - 6);
+        }
+      }
+
+      // ファイル名を取得
+      std::string fileName = "";
+      size_t fileNamePos = cdValue.find("filename=\"");
+      if (fileNamePos != std::string::npos) {
+        size_t fileNameEndPos = cdValue.find("\"", fileNamePos + 10);
+        if (fileNameEndPos != std::string::npos) {
+          fileName = cdValue.substr(fileNamePos + 10,
+                                    fileNameEndPos - fileNamePos - 10);
+        }
+      }
+
+      // マルチパートデータ構造体を作成して結果に追加
+      MultipartData data;
+      data.fieldName = fieldName;
+      data.fileName = fileName;
+      data.content = content;
+      result.push_back(data);
+    }
+
+    pos = nextPos;
+  }
+
+  return result;
+}
+
+// マルチパートフォームを処理する関数
+bool POST::handleMultipartForm(HTTPResponse& httpResponse,
+                               const std::string& dirPath) {
+  std::string body = _httpRequest.getBody();
+  std::string boundary = extractBoundary();
+
+  if (boundary.empty()) {
+    httpResponse.setHttpStatusCode(400);  // Bad Request
+    return false;
+  }
+
+  std::vector<MultipartData> parts = parseMultipartFormData(body, boundary);
+
+  if (parts.empty()) {
+    httpResponse.setHttpStatusCode(400);  // Bad Request
+    return false;
+  }
+
+  bool success = false;
+
+  // 各パートを処理
+  for (size_t i = 0; i < parts.size(); i++) {
+    // ファイルアップロードパートの処理
+    if (!parts[i].fileName.empty()) {
+      // リクエストURLからディレクトリパスを取得
+      std::string filePath = dirPath + "/" + parts[i].fileName;
+
+      // ファイルを保存
+      if (writeToFile(filePath, parts[i].content)) {
+        success = true;
+      }
+    }
+  }
+
+  if (success) {
+    httpResponse.setHttpStatusCode(201);  // Created
+    return true;
+  } else {
+    httpResponse.setHttpStatusCode(500);  // Internal Server Error
+    return false;
+  }
+}
+
 // POSTリクエストを処理する関数
 bool POST::handlePostRequest(HTTPResponse& httpResponse,
                              const std::string& fullPath) {
@@ -287,6 +442,19 @@ bool POST::handlePostRequest(HTTPResponse& httpResponse,
     return false;
   }
 
+  // ディレクトリパスを取得
+  std::string dirPath = fullPath;
+  size_t lastSlash = dirPath.find_last_of('/');
+  if (lastSlash != std::string::npos) {
+    dirPath = dirPath.substr(0, lastSlash);
+  }
+
+  // マルチパートフォームデータの処理
+  if (isMultipartForm()) {
+    return handleMultipartForm(httpResponse, dirPath);
+  }
+
+  // 通常のPOST処理（既存のコード）
   std::string body = _httpRequest.getBody();
 
   // チャンク転送の場合はデコード

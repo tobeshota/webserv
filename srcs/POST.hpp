@@ -41,6 +41,25 @@ class POST : public Handler {
   // 指定されたディレクトリにPOSTが許可されているか確認する関数
   bool isPostAllowedForPath(const std::string& path) const;
 
+  // マルチパートフォームデータかどうか確認する関数
+  bool isMultipartForm() const;
+
+  // Content-Typeヘッダーから境界区切り文字を抽出する関数
+  std::string extractBoundary() const;
+
+  // マルチパートフォームデータを解析する関数
+  struct MultipartData {
+    std::string fieldName;
+    std::string fileName;
+    std::string content;
+  };
+  std::vector<MultipartData> parseMultipartFormData(
+      const std::string& body, const std::string& boundary);
+
+  // マルチパートフォームを処理する関数
+  bool handleMultipartForm(HTTPResponse& httpResponse,
+                           const std::string& dirPath);
+
  public:
   POST(Directive rootDirective, HTTPRequest httpRequest);
   void handleRequest(HTTPResponse& httpResponse);
