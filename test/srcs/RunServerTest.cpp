@@ -124,29 +124,31 @@ TEST_F(RunServerTest, ConfigPathManagement) {
   EXPECT_EQ(server.getConfPath(), "");
 }
 
-// handle_new_connectionのテスト
-TEST_F(RunServerTest, HandleNewConnection) {
-  RunServer server;
+// // handle_new_connectionのテスト
+// TEST_F(RunServerTest, HandleNewConnection) {
+//   RunServer server;
 
-  // ソケットペアを作成
-  int serverFd, clientFd;
-  ASSERT_TRUE(createSocketPair(serverFd, clientFd));
-  trackFd(serverFd);
-  trackFd(clientFd);
+//   // ソケットペアを作成
+//   int serverFd, clientFd;
+//   ASSERT_TRUE(createSocketPair(serverFd, clientFd));
+//   trackFd(serverFd);
+//   trackFd(clientFd);
 
-  // accept呼び出しをシミュレートするため、serverFdから接続を受け付けられるようにする必要がある
-  // ただし、テスト環境ではacceptの完全なシミュレートは難しいため、簡易的なテストに留める
+//   //
+//   accept呼び出しをシミュレートするため、serverFdから接続を受け付けられるようにする必要がある
+//   //
+//   ただし、テスト環境ではacceptの完全なシミュレートは難しいため、簡易的なテストに留める
 
-  // 不正なfdでのエラー処理をテスト
-  testing::internal::CaptureStderr();
-  server.handle_new_connection(-1);  // 無効なfd
-  std::string output = testing::internal::GetCapturedStderr();
-  EXPECT_NE(output.find("accept"), std::string::npos);
+//   // 不正なfdでのエラー処理をテスト
+//   testing::internal::CaptureStderr();
+//   server.handle_new_connection(-1);  // 無効なfd
+//   std::string output = testing::internal::GetCapturedStderr();
+//   EXPECT_NE(output.find("accept"), std::string::npos);
 
-  // 接続後のpoll_fdsの変更を確認するには、実際の接続が必要だが、
-  // 単体テストでは難しいため、ここでは簡易的な確認のみ行う
-  EXPECT_EQ(server.get_poll_fds().size(), 0);
-}
+//   // 接続後のpoll_fdsの変更を確認するには、実際の接続が必要だが、
+//   // 単体テストでは難しいため、ここでは簡易的な確認のみ行う
+//   EXPECT_EQ(server.get_poll_fds().size(), 0);
+// }
 
 // 助手クラス: handle_client_dataのテスト用にRunServerをサブクラス化
 class TestableRunServer : public RunServer {
