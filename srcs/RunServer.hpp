@@ -5,6 +5,7 @@
 
 #include <cstddef>
 #include <iostream>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -18,6 +19,7 @@ class MultiPortServer;
 class RunServer {
  private:
   std::vector<pollfd> poll_fds;
+  std::map<int, int> client_to_port;  // クライアントFD → サーバーポートのマップ
 
  public:
   RunServer();
@@ -30,8 +32,9 @@ class RunServer {
   void runMultiPort(MultiPortServer &server);
 
   void add_poll_fd(pollfd poll_fd);
-  void handle_new_connection(int server_fd);
+  void handle_new_connection(int server_fd, int server_port = -1);
   void handle_client_data(size_t client_fd);
+  void handle_client_data(size_t client_fd_index, int server_port = -1);
 
   void process_poll_events(ServerData &server_data);
 

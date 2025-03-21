@@ -18,8 +18,5 @@ class OSInit {
 
   void initServer(ServerData &server_data);
 
-  virtual void set_serverpoll_data(ServerData &server_data,
-                                   RunServer &run_server);
-
   void close_server_fd(ServerData &server_data);
 };
