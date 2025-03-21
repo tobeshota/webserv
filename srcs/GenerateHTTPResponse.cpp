@@ -54,35 +54,36 @@ bool isDirectory(const std::string& filePath) {
   return S_ISDIR(st.st_mode);
 }
 
-std::string GenerateHTTPResponse::getPathForHttpResponseBody(
+// エラーステータスコード（2xxまたは301）の場合のファイルパスを取得する
+std::string GenerateHTTPResponse::getErrorPathForHttpResponseBody(
     const int status_code) {
-  // エラーステータスコード（2xxまたは301）の場合
-  if (status_code / 100 != 2 && status_code != 301) {
-    std::string errorPageValue, rootValue;
+  std::string errorPageValue, rootValue;
 
-    // ステータスコードに対応するerror_pageディレクティブを探す
-    const Directive* errorPageDirective = _rootDirective.findDirective(
-        _httpRequest.getServerName(), "error_page");
-    if (errorPageDirective != NULL) {
-      errorPageValue = errorPageDirective->getValue(int2str(status_code));
-    }
-
-    // ホストディレクティブからrootの値を取得
-    const Directive* hostDirective =
-        _rootDirective.findDirective(_httpRequest.getServerName());
-    if (hostDirective != NULL) {
-      rootValue = hostDirective->getValue("root");
-    }
-
-    // カスタムエラーページが設定されていればそのパスを返す
-    if (!errorPageValue.empty()) {
-      return rootValue + errorPageValue;
-    }
-    // 設定がなければデフォルトのエラーページを返す
-    return DEFAULT_ERROR_PAGE;
+  // ステータスコードに対応するerror_pageディレクティブを探す
+  const Directive* errorPageDirective =
+      _rootDirective.findDirective(_httpRequest.getServerName(), "error_page");
+  if (errorPageDirective != NULL) {
+    errorPageValue = errorPageDirective->getValue(int2str(status_code));
   }
 
-  // 成功ステータス（2xxまたは301）の場合
+  // ホストディレクティブからrootの値を取得
+  const Directive* hostDirective =
+      _rootDirective.findDirective(_httpRequest.getServerName());
+  if (hostDirective != NULL) {
+    rootValue = hostDirective->getValue("root");
+  }
+
+  // カスタムエラーページが設定されており、かつ空でなければそのパスを返す
+  if (!errorPageValue.empty() &&
+      !readFile(rootValue + errorPageValue).empty()) {
+    return rootValue + errorPageValue;
+  }
+  // 設定がなければデフォルトのエラーページを返す
+  return DEFAULT_ERROR_PAGE;
+}
+
+// 成功ステータス（2xxまたは301）の場合のファイルパスを取得する
+std::string GenerateHTTPResponse::getSuccessPathForHttpResponseBody() {
   std::string requestedURL = _httpRequest.getURL();
   std::string rootValue = "";
 
@@ -168,7 +169,6 @@ std::string GenerateHTTPResponse::generateHttpResponseBody(
 
   std::string httpResponseBody;
 
-  std::cout << "status_code: " << status_code << std::endl;
   // CGIは実行されたか（2xx番でないと実行されていない）
   if (status_code / 100 == 2 && (endsWith(_httpRequest.getURL(), ".py") ||
                                  endsWith(_httpRequest.getURL(), ".sh"))) {
@@ -182,12 +182,16 @@ std::string GenerateHTTPResponse::generateHttpResponseBody(
     HTTPResponse response;
     listenDirectory.handleRequest(response);
     httpResponseBody = response.getHttpResponseBody();
-  } else {
-    httpResponseBody = readFile(getPathForHttpResponseBody(status_code));
+  }
+  // 成功しているか
+  else if (status_code / 100 == 2 || status_code == 301) {
+    httpResponseBody = readFile(getSuccessPathForHttpResponseBody());
   }
 
+  // 読み取ったファイルが空の場合
   if (httpResponseBody.empty()) {
-    httpResponseBody = readFile(DEFAULT_ERROR_PAGE);
+    std::cout << "here" << std::endl;
+    httpResponseBody = readFile(getErrorPathForHttpResponseBody(status_code));
     pageFound = false;
   }
   return httpResponseBody;
