@@ -12,7 +12,7 @@
 #include <vector>
 
 #define PORT 80  //  confからとってくるべき
-#define MAX_CONNECTION 3
+#define MAX_CONNECTION 128
 #define DEFAULT_CONF_PATH "./conf/webserv.conf"
 
 class IServerFunctions {

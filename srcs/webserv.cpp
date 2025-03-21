@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "MultiPortServer.hpp"
-// #include "OSInit.hpp"
+#include "OSInit.hpp"
 #include "RunServer.hpp"  // 明示的にインクルード
 #include "TOMLParser.hpp"
 
@@ -40,7 +40,7 @@ std::vector<int> getPorts() {
 
 int webserv(int argc, char** argv) {
   ServerData server_data;
-  // OSInit os;
+  OSInit osInit;
   RunServer run_server;
   std::vector<int> ports = getPorts();
 
@@ -52,8 +52,22 @@ int webserv(int argc, char** argv) {
   MultiPortServer server;
   server.setPorts(ports);
 
-  // ソケット初期化
-  if (!server.initializeSockets()) {
+  bool success = false;
+
+  // 各ポートに対してServerDataを作成し、OSInitを使用して初期化
+  for (size_t i = 0; i < ports.size(); ++i) {
+    ServerData server_data(ports[i]);
+    osInit.initServer(server_data);
+
+    // 初期化したサーバーFDを追加
+    int server_fd = server_data.get_server_fd();
+    if (server_fd >= 0) {
+      server.addServerFd(server_fd, ports[i]);
+      success = true;
+    }
+  }
+
+  if (!success) {
     std::cerr << "Failed to initialize sockets" << std::endl;
     return EXIT_FAILURE;
   }
