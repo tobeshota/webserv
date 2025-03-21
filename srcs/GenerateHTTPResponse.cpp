@@ -162,8 +162,7 @@ std::vector<std::string> GenerateHTTPResponse::getDirectiveValues(
   return emptyVector;
 }
 
-std::string GenerateHTTPResponse::generateHttpResponseBody(
-    const int status_code, bool& pageFound) {
+std::string GenerateHTTPResponse::generateHttpResponseBody(const int status_code) {
   // DELETEメソッドがコールされた場合，HTTPレスポンスボディを空にする
   if (_httpRequest.getMethod() == "DELETE") return "";
 
@@ -191,7 +190,6 @@ std::string GenerateHTTPResponse::generateHttpResponseBody(
   // 読み取ったファイルが空の場合
   if (httpResponseBody.empty()) {
     httpResponseBody = readFile(getErrorPathForHttpResponseBody(status_code));
-    pageFound = false;
   }
   return httpResponseBody;
 }
@@ -201,18 +199,13 @@ GenerateHTTPResponse::GenerateHTTPResponse(Directive rootDirective,
     : _rootDirective(rootDirective), _httpRequest(httpRequest) {}
 
 void GenerateHTTPResponse::handleRequest(HTTPResponse& httpResponse) {
-  bool pageFound = true;
-
   // リダイレクトが指定されている場合HttpStatusCodeを301に設定する
   if (getDirectiveValue("return") != "") {
     httpResponse.setHttpStatusCode(301);
   }
 
   httpResponse.setHttpResponseBody(this->generateHttpResponseBody(
-      httpResponse.getHttpStatusCode(), pageFound));
-  if (pageFound == false) {
-    httpResponse.setHttpStatusCode(404);
-  }
+      httpResponse.getHttpStatusCode()));
   httpResponse.setHttpStatusLine(
       this->generateHttpStatusLine(httpResponse.getHttpStatusCode()));
   httpResponse.setHttpResponseHeader(
