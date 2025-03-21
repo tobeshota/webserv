@@ -123,6 +123,13 @@ void RunServer::handle_client_data(size_t client_fd, std::string receivedPort) {
     // HTTPレスポンスオブジェクトを作成
     HTTPResponse httpResponse;
 
+    // URLリダイレクトが指定されている場合，httpRequestのURLをリダイレクト先に変更する
+    // URLリダイレクトとはすなわち，HTTPリクエストのURLを変更することであるため．
+    GenerateHTTPResponse serchReturnValue(*rootDirective, httpRequest);
+    if (serchReturnValue.getDirectiveValue("return") != "") {
+      httpRequest.setURL(serchReturnValue.getDirectiveValue("return"));
+    }
+
     // 鎖をつなげる
     PrintResponse printResponse(get_poll_fds()[client_fd].fd);
     GenerateHTTPResponse generateHTTPResponse(*rootDirective, httpRequest);

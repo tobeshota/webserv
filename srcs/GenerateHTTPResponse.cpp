@@ -168,10 +168,6 @@ std::string GenerateHTTPResponse::generateHttpResponseBody(
 
   std::string httpResponseBody;
 
-  // URLリダイレクトすべきか
-  if (getDirectiveValue("return") != "") {
-    _httpRequest.setURL(getDirectiveValue("return"));
-  }
   // HTTPレスポンスがCGIの実行結果であるか
   if (endsWith(_httpRequest.getURL(), ".py") ||
       endsWith(_httpRequest.getURL(), ".sh")) {
