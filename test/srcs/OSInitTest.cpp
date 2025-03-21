@@ -36,7 +36,8 @@
 //   ASSERT_NE(server_data.get_server_fd(), -1);
 //   osinit.close_server_fd(server_data);
 
-//   EXPECT_EQ(close(server_data.get_server_fd()), -1);  // すでに閉じているか確認
+//   EXPECT_EQ(close(server_data.get_server_fd()), -1);  //
+//   すでに閉じているか確認
 // }
 
 // // 最大接続数のテスト
