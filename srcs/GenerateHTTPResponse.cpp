@@ -190,7 +190,6 @@ std::string GenerateHTTPResponse::generateHttpResponseBody(
 
   // 読み取ったファイルが空の場合
   if (httpResponseBody.empty()) {
-    std::cout << "here" << std::endl;
     httpResponseBody = readFile(getErrorPathForHttpResponseBody(status_code));
     pageFound = false;
   }
