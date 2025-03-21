@@ -51,14 +51,14 @@ int webserv(int argc, char** argv) {
   // マルチポートサーバーを作成
   MultiPortServer server;
   server.setPorts(ports);
-  
+
   bool success = false;
 
   // 各ポートに対してServerDataを作成し、OSInitを使用して初期化
   for (size_t i = 0; i < ports.size(); ++i) {
     ServerData server_data(ports[i]);
     osInit.initServer(server_data);
-    
+
     // 初期化したサーバーFDを追加
     int server_fd = server_data.get_server_fd();
     if (server_fd >= 0) {

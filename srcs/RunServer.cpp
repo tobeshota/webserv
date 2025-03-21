@@ -145,7 +145,6 @@ static std::string int2str(int nb) {
   return ss.str();
 }
 
-
 // MultiPortServer用のイベント処理
 void RunServer::process_poll_events_multiport(MultiPortServer &server) {
   // すべてのファイルディスクリプタをチェック

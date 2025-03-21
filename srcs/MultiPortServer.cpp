@@ -48,18 +48,18 @@ void MultiPortServer::closeSockets() {
 
 // OSInitで初期化したサーバーFDを追加するメソッド
 void MultiPortServer::addServerFd(int fd, int port) {
-  if(fd < 0) {
+  if (fd < 0) {
     return;
   }
   server_fds.push_back(fd);
   fd_to_port[fd] = port;
-  
+
   // アドレス情報も保存（必要に応じて）
   struct sockaddr_in address;
   address.sin_family = AF_INET;
   address.sin_addr.s_addr = INADDR_ANY;
   address.sin_port = htons(port);
   addrs.push_back(address);
-  
+
   std::cout << "Added server fd " << fd << " for port " << port << std::endl;
 }

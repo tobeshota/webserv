@@ -34,7 +34,7 @@ class MultiPortServer {
 
   // サーバーソケットをクローズ
   void closeSockets();
-  
+
   // OSInitと連携するための新しいメソッド
   void addServerFd(int fd, int port);
 };
