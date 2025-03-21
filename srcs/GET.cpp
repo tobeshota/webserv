@@ -28,7 +28,7 @@ std::string GET::getFullPath() const {
   // ホストディレクティブからrootの値を取得
   std::string rootValue;
   const Directive* hostDirective =
-      _rootDirective.findDirective(_httpRequest.getHeader("Host"));
+      _rootDirective.findDirective(_httpRequest.getServerName());
   if (hostDirective != NULL) {
     rootValue = hostDirective->getValue("root");
   }

@@ -87,7 +87,7 @@ std::string CGI::getScriptPath() const {
 
   // ホストディレクティブからrootの値を取得
   const Directive* hostDirective =
-      _rootDirective.findDirective(_httpRequest.getHeader("Host"));
+      _rootDirective.findDirective(_httpRequest.getServerName());
   if (hostDirective != NULL) {
     rootValue = hostDirective->getValue("root");
   }
@@ -96,7 +96,7 @@ std::string CGI::getScriptPath() const {
   if (isDirectory(url)) {
     // インデックスファイルを探す
     const Directive* indexDirective = _rootDirective.findDirective(
-        _httpRequest.getHeader("Host"), "location", url);
+        _httpRequest.getServerName(), "location", url);
     if (indexDirective != NULL) {
       std::string indexValue = indexDirective->getValue("index");
       if (!indexValue.empty() && isSupportedScript(indexValue)) {
@@ -164,7 +164,7 @@ char** CGI::setupEnvironment(const std::string& scriptPath) {
   }
 
   // サーバー情報
-  std::string host = _httpRequest.getHeader("Host");
+  std::string host = _httpRequest.getServerName();
   size_t colonPos = host.find(':');
   if (colonPos != std::string::npos) {
     env["SERVER_NAME"] = host.substr(0, colonPos);
@@ -406,7 +406,7 @@ void CGI::handleRequest(HTTPResponse& httpResponse) {
 
     // indexディレクティブをチェック
     const Directive* indexDirective = _rootDirective.findDirective(
-        _httpRequest.getHeader("Host"), "location", _httpRequest.getURL());
+        _httpRequest.getServerName(), "location", _httpRequest.getURL());
     if (indexDirective != NULL) {
       std::string indexValue = indexDirective->getValue("index");
       if (!indexValue.empty() && isSupportedScript(indexValue)) {

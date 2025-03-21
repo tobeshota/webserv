@@ -5,6 +5,8 @@
 #include <cstdio>   // std::removeのため
 #include <fstream>  // ファイル存在チェック
 
+#include "GenerateHTTPResponse.hpp"  //  for getDirectiveValues
+
 // 完全なファイルパスを取得する関数
 std::string DeleteClientMethod::getFullPath() const {
   // URLが空の場合は早期リターン
@@ -15,7 +17,7 @@ std::string DeleteClientMethod::getFullPath() const {
   // ホストディレクティブからrootの値を取得
   std::string rootValue;
   const Directive* hostDirective =
-      _rootDirective.findDirective(_httpRequest.getHeader("Host"));
+      _rootDirective.findDirective(_httpRequest.getServerName());
   if (hostDirective != NULL) {
     rootValue = hostDirective->getValue("root");
   }
@@ -72,7 +74,28 @@ int DeleteClientMethod::determineStatusCode(const std::string& filePath) const {
   }
 }
 
+static bool isContain(std::vector<std::string> vec, std::string str) {
+  for (std::vector<std::string>::iterator itr = vec.begin(); itr != vec.end();
+       ++itr) {
+    if (*itr == str) {
+      return true;
+    }
+  }
+  return false;
+}
+
 void DeleteClientMethod::handleRequest(HTTPResponse& httpResponse) {
+  GenerateHTTPResponse generateHTTPResponse(_rootDirective, _httpRequest);
+
+  if (isContain(generateHTTPResponse.getDirectiveValues("deny"),
+                _httpRequest.getMethod())) {
+    httpResponse.setHttpStatusCode(405);
+    if (_nextHandler != NULL) {
+      _nextHandler->handleRequest(httpResponse);
+    }
+    return;
+  }
+
   // URLが空かどうかを明示的にチェック
   if (_httpRequest.getURL().empty()) {
     httpResponse.setHttpStatusCode(404);  // Not Found

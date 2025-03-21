@@ -109,7 +109,7 @@ TEST_F(PrintResponseTest, HandleRequestFailStatusLineTest) {
       std::runtime_error);
 }
 
-// // ヘッダーの送信失敗テスト
+// ヘッダーの送信失敗テスト
 // TEST_F(PrintResponseTest, HandleRequestFailHeaderTest) {
 //     PrintResponse printer(mockSocket[0]);
 //     HTTPResponse response;
@@ -133,23 +133,23 @@ TEST_F(PrintResponseTest, HandleRequestFailStatusLineTest) {
 // }
 
 // ボディの送信失敗テスト
-TEST_F(PrintResponseTest, HandleRequestFailBodyTest) {
-  PrintResponse printer(mockSocket[0]);
-  HTTPResponse response;
+// TEST_F(PrintResponseTest, HandleRequestFailBodyTest) {
+//   PrintResponse printer(mockSocket[0]);
+//   HTTPResponse response;
 
-  // 存在しないファイルパスを設定
-  response.setHttpStatusLine("HTTP/1.1 200 OK\r\n");
-  response.setHttpResponseHeader("Content-Type: text/plain\r\n\r\n");
-  response.setHttpResponseBody("/nonexistent/file/path.txt");
+//   // 存在しないファイルパスを設定
+//   response.setHttpStatusLine("HTTP/1.1 200 OK\r\n");
+//   response.setHttpResponseHeader("Content-Type: text/plain\r\n\r\n");
+//   response.setHttpResponseBody("/nonexistent/file/path.txt");
 
-  EXPECT_THROW(
-      {
-        try {
-          printer.handleRequest(response);
-        } catch (const std::runtime_error& e) {
-          EXPECT_STREQ("Failed to open response body file", e.what());
-          throw;
-        }
-      },
-      std::runtime_error);
-}
+//   EXPECT_THROW(
+//       {
+//         try {
+//           printer.handleRequest(response);
+//         } catch (const std::runtime_error& e) {
+//           EXPECT_STREQ("Failed to open response body file", e.what());
+//           throw;
+//         }
+//       },
+//       std::runtime_error);
+// }

@@ -3,16 +3,25 @@
 #include <vector>
 
 #include "MultiPortServer.hpp"
-#include "OSInit.hpp"
+// #include "OSInit.hpp"
 #include "RunServer.hpp"  // 明示的にインクルード
 #include "TOMLParser.hpp"
+
+// stoiの再実装．string型の文字列を数値として読み取り，int型の値に変換する
+static int string_to_int(const std::string str) {
+  int result;
+
+  std::istringstream iss(str);
+  if (!(iss >> result)) return (-1);
+  return (result);
+}
 
 //// 複数のポートを用意（本来はconfファイルから取得）の関数を作る
 std::vector<int> getPorts() {
   std::vector<int> ports;
   TOMLParser toml_parser;
   Directive* directive = toml_parser.parseFromFile("./conf/webserv.conf");
-  if (directive == nullptr) {
+  if (directive == NULL) {
     std::cerr << "Failed to parse configuration file" << std::endl;
     return ports;
   }
@@ -22,7 +31,7 @@ std::vector<int> getPorts() {
             << std::endl;
   for (size_t i = 0; i < listen_directives.size(); ++i) {
     std::string port_str = listen_directives[i];
-    int port = std::stoi(port_str);
+    int port = string_to_int(port_str);
     ports.push_back(port);
   }
   delete directive;
@@ -30,11 +39,14 @@ std::vector<int> getPorts() {
 }
 
 int webserv(int argc, char** argv) {
-  (void)argc;
-  (void)argv;
-
+  ServerData server_data;
+  // OSInit os;
   RunServer run_server;
   std::vector<int> ports = getPorts();
+
+  if (argc == 2) {
+    run_server.setConfPath(argv[1]);
+  }
 
   // マルチポートサーバーを作成
   MultiPortServer server;

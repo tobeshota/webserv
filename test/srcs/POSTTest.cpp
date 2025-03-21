@@ -97,7 +97,7 @@ class POSTTest : public ::testing::Test {
                                 const std::string& contentType = "text/plain",
                                 bool chunked = false) {
     std::map<std::string, std::string> headers;
-    headers["Host"] = "localhost:8080";
+    headers["Host"] = "localhost";
     headers["Content-Type"] = contentType;
 
     if (chunked) {
@@ -136,7 +136,7 @@ class POSTTest : public ::testing::Test {
 TEST_F(POSTTest, BasicPostRequest) {
   // 設定
   Directive rootDirective =
-      createTestDirective("localhost:8080", "./test_tmp/webroot", "1M");
+      createTestDirective("localhost", "./test_tmp/webroot", "1M");
   HTTPRequest request = createPostRequest("/uploads/file.txt", "Test content");
   HTTPResponse response;
 
@@ -154,7 +154,7 @@ TEST_F(POSTTest, BasicPostRequest) {
 TEST_F(POSTTest, ChunkedTransferEncoding) {
   // 設定
   Directive rootDirective =
-      createTestDirective("localhost:8080", "./test_tmp/webroot", "1M");
+      createTestDirective("localhost", "./test_tmp/webroot", "1M");
   std::string originalBody = "This is a chunked test message";
   std::string chunkedBody = createChunkedBody(originalBody);
 
@@ -176,7 +176,7 @@ TEST_F(POSTTest, ChunkedTransferEncoding) {
 TEST_F(POSTTest, BodySizeTooLarge) {
   // 設定
   Directive rootDirective =
-      createTestDirective("localhost:8080", "./test_tmp/webroot", "10");
+      createTestDirective("localhost", "./test_tmp/webroot", "10");
   std::string largeBody(100, 'X');  // 制限より大きいサイズ
   HTTPRequest request = createPostRequest("/uploads/large.txt", largeBody);
   HTTPResponse response;
@@ -194,7 +194,7 @@ TEST_F(POSTTest, BodySizeTooLarge) {
 TEST_F(POSTTest, NonExistentDirectory) {
   // 設定
   Directive rootDirective =
-      createTestDirective("localhost:8080", "./test_tmp/webroot", "1M");
+      createTestDirective("localhost", "./test_tmp/webroot", "1M");
   HTTPRequest request =
       createPostRequest("/non_existent/file.txt", "Test content");
   HTTPResponse response;
@@ -211,7 +211,7 @@ TEST_F(POSTTest, NonExistentDirectory) {
 TEST_F(POSTTest, NoPermissionDirectory) {
   // 設定
   Directive rootDirective =
-      createTestDirective("localhost:8080", "./test_tmp/webroot", "1M");
+      createTestDirective("localhost", "./test_tmp/webroot", "1M");
   HTTPRequest request =
       createPostRequest("/no_permission/file.txt", "Test content");
   HTTPResponse response;
@@ -228,7 +228,7 @@ TEST_F(POSTTest, NoPermissionDirectory) {
 TEST_F(POSTTest, MethodNotAllowed) {
   // POSTが許可されていないディレクティブを作成
   Directive rootDirective =
-      createTestDirective("localhost:8080", "./test_tmp/webroot", "1M", false);
+      createTestDirective("localhost", "./test_tmp/webroot", "1M", false);
   HTTPRequest request =
       createPostRequest("/uploads/not_allowed.txt", "Test content");
   HTTPResponse response;
@@ -245,7 +245,7 @@ TEST_F(POSTTest, MethodNotAllowed) {
 TEST_F(POSTTest, InvalidMethod) {
   // 設定
   Directive rootDirective =
-      createTestDirective("localhost:8080", "./test_tmp/webroot", "1M");
+      createTestDirective("localhost", "./test_tmp/webroot", "1M");
   // POSTハンドラにGETメソッドのリクエストを渡す
   std::map<std::string, std::string> headers;
   headers["Host"] = "localhost:8080";
@@ -264,7 +264,7 @@ TEST_F(POSTTest, InvalidMethod) {
 TEST_F(POSTTest, PostToCgiScript) {
   // 設定
   Directive rootDirective =
-      createTestDirective("localhost:8080", "./test_tmp/webroot", "1M");
+      createTestDirective("localhost", "./test_tmp/webroot", "1M");
   HTTPRequest request = createPostRequest("/test.py", "name=John&age=30",
                                           "application/x-www-form-urlencoded");
   HTTPResponse response;
@@ -284,7 +284,7 @@ TEST_F(POSTTest, PostToCgiScript) {
 TEST_F(POSTTest, DefaultSizeLimit) {
   // 設定 - client_max_body_sizeを指定しない
   Directive rootDirective =
-      createTestDirective("localhost:8080", "./test_tmp/webroot", "");
+      createTestDirective("localhost", "./test_tmp/webroot", "");
 
   // デフォルト制限（1MB）より小さいボディ
   std::string smallBody(1024, 'X');  // 1KB
@@ -304,7 +304,7 @@ TEST_F(POSTTest, DefaultSizeLimit) {
 TEST_F(POSTTest, EmptyBody) {
   // 設定
   Directive rootDirective =
-      createTestDirective("localhost:8080", "./test_tmp/webroot", "1M");
+      createTestDirective("localhost", "./test_tmp/webroot", "1M");
   HTTPRequest request = createPostRequest("/uploads/empty.txt", "");
   HTTPResponse response;
 

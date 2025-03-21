@@ -1,25 +1,25 @@
-#pragma once
+// #pragma once
 
-#include <unistd.h>
+// #include <unistd.h>
 
-#include <iostream>
-#include <string>
-#include <vector>
+// #include <iostream>
+// #include <string>
+// #include <vector>
 
-#include "RunServer.hpp"
-#include "ServerData.hpp"
+// #include "RunServer.hpp"
+// #include "ServerData.hpp"
 
-// サーバーを構築する
-// webserv.conf指定のポート番号でのリッスンを受け付ける
-class OSInit {
- public:
-  OSInit();
-  ~OSInit();
+// // サーバーを構築する
+// // webserv.conf指定のポート番号でのリッスンを受け付ける
+// class OSInit {
+//  public:
+//   OSInit();
+//   ~OSInit();
 
-  void initServer(ServerData &server_data);
+//   void initServer(ServerData &server_data);
 
-  virtual void set_serverpoll_data(ServerData &server_data,
-                                   RunServer &run_server);
+//   virtual void set_serverpoll_data(ServerData &server_data,
+//                                    RunServer &run_server);
 
-  void close_server_fd(ServerData &server_data);
-};
+//   void close_server_fd(ServerData &server_data);
+// };

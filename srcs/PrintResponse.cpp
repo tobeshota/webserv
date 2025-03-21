@@ -21,14 +21,21 @@ PrintResponse::PrintResponse(int client_socket) {
 
 PrintResponse::~PrintResponse() {}
 
-// void mock(HTTPResponse &httpResponse) {
-//   httpResponse.setHttpStatusLine("HTTP/1.1 200 OK\r\n");
-//   httpResponse.setHttpResponseHeader("Content-Type: text/html\r\n\r\n");
-//   httpResponse.setHttpResponseBody(
-//       "/Users/yoshimurahiro/Desktop/wevserv_FR47/html/index.html");
-// }
+void sendABit(const int client_socket, const std::string& str) {
+  // 文字列の長さが10文字未満でも1回だけ送信するようにする
+  size_t start = 0;
+  size_t len = str.length();
+  while (start < len) {
+    // 10文字分を切り取って送信
+    if (send(client_socket, str.substr(start, 10).c_str(),
+             str.substr(start, 10).size(), MSG_NOSIGNAL) < 0) {
+      throw std::runtime_error("Failed to send response body");
+    }
+    start += 10;
+  }
+}
 
-void PrintResponse::handleRequest(HTTPResponse &httpResponse) {
+void PrintResponse::handleRequest(HTTPResponse& httpResponse) {
   // mock(httpResponse);
   // ステータスラインを送信
   if (send(client_socket, httpResponse.getHttpStatusLine().c_str(),
@@ -38,19 +45,12 @@ void PrintResponse::handleRequest(HTTPResponse &httpResponse) {
 
   // レスポンスヘッダを送信
   std::string response_header = httpResponse.getHttpResponseHeader();
+  response_header += "\r\n";  //  理由：ヘッダーとボディを分けるため
   if (send(client_socket, response_header.c_str(), response_header.size(),
            MSG_NOSIGNAL) < 0) {
     throw std::runtime_error("Failed to send response header");
   }
 
   // レスポンスボディ送信
-  std::string body_path = httpResponse.getHttpResponseBody();
-  if (!body_path.empty()) {
-    int fd = open(body_path.c_str(), O_RDONLY);
-    if (fd < 0) {
-      throw std::runtime_error("Failed to open response body file");
-    }
-    sendFileContent(fd, client_socket);
-    close(fd);
-  }
+  sendABit(client_socket, httpResponse.getHttpResponseBody());
 }

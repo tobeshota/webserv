@@ -38,7 +38,6 @@ std::string readFile(const std::string& filePath) {
 std::string GenerateHTTPResponse::generateHttpResponseHeader(
     const std::string& httpResponseBody) {
   std::string httpResponseHeader = "Server: webserv\n";
-  // httpResponseHeader += "Date: " + getCurrentTimeInGMTFormat() + "\n";
   httpResponseHeader += "Content-Type: text/html\n";
   httpResponseHeader +=
       "Content-Length: " + int2str(httpResponseBody.size()) + "\n";
@@ -63,14 +62,14 @@ std::string GenerateHTTPResponse::getPathForHttpResponseBody(
 
     // ステータスコードに対応するerror_pageディレクティブを探す
     const Directive* errorPageDirective = _rootDirective.findDirective(
-        _httpRequest.getHeader("Host"), "error_page");
+        _httpRequest.getServerName(), "error_page");
     if (errorPageDirective != NULL) {
       errorPageValue = errorPageDirective->getValue(int2str(status_code));
     }
 
     // ホストディレクティブからrootの値を取得
     const Directive* hostDirective =
-        _rootDirective.findDirective(_httpRequest.getHeader("Host"));
+        _rootDirective.findDirective(_httpRequest.getServerName());
     if (hostDirective != NULL) {
       rootValue = hostDirective->getValue("root");
     }
@@ -89,7 +88,7 @@ std::string GenerateHTTPResponse::getPathForHttpResponseBody(
 
   // ホストディレクティブからrootの値を取得
   const Directive* hostDirective =
-      _rootDirective.findDirective(_httpRequest.getHeader("Host"));
+      _rootDirective.findDirective(_httpRequest.getServerName());
   if (hostDirective != NULL) {
     rootValue = hostDirective->getValue("root");
   }
@@ -98,7 +97,7 @@ std::string GenerateHTTPResponse::getPathForHttpResponseBody(
   if (isDirectory(rootValue + requestedURL)) {
     // インデックスファイルを探す
     const Directive* indexDirective = _rootDirective.findDirective(
-        _httpRequest.getHeader("Host"), "location", requestedURL);
+        _httpRequest.getServerName(), "location", requestedURL);
     if (indexDirective != NULL) {
       std::string indexValue = indexDirective->getValue("index");
       if (!indexValue.empty()) {
@@ -132,7 +131,7 @@ std::vector<std::string> GenerateHTTPResponse::getDirectiveValues(
   // ホストディレクティブからrootの値を取得
   std::string rootValue = "";
   const Directive* hostDirective =
-      _rootDirective.findDirective(_httpRequest.getHeader("Host"));
+      _rootDirective.findDirective(_httpRequest.getServerName());
   if (hostDirective != NULL) {
     rootValue = hostDirective->getValue("root");
   }
@@ -141,7 +140,7 @@ std::vector<std::string> GenerateHTTPResponse::getDirectiveValues(
   std::string requestedURL = _httpRequest.getURL();
   if (isDirectory(rootValue + requestedURL)) {
     const Directive* locationDirective = _rootDirective.findDirective(
-        _httpRequest.getHeader("Host"), "location", requestedURL);
+        _httpRequest.getServerName(), "location", requestedURL);
     if (locationDirective != NULL) {
       directiveValues = locationDirective->getValues(directiveKey);
       if (!directiveValues.empty()) return directiveValues;
@@ -181,7 +180,8 @@ std::string GenerateHTTPResponse::generateHttpResponseBody(
   // ディレクトリリスニングすべきか
   else if (status_code == 200 && getDirectiveValue("autoindex") == "on" &&
            getDirectiveValue("root") != "") {
-    ListenDirectory listenDirectory(getDirectiveValue("root"));
+    ListenDirectory listenDirectory(getDirectiveValue("root") +
+                                    _httpRequest.getURL());
     HTTPResponse response;
     listenDirectory.handleRequest(response);
     httpResponseBody = response.getHttpResponseBody();
