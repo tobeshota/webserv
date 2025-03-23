@@ -36,7 +36,6 @@ void RunServer::handle_new_connection(int server_fd, int server_port) {
     perror("accept");
     return;
   }
-  std::cout << "New connection accepted" << std::endl;
 
   // クライアントFDとサーバーポートの対応を保存
   client_to_port[new_socket] = server_port;
@@ -87,6 +86,7 @@ void RunServer::handle_client_data(size_t client_fd, std::string receivedPort) {
     }
     close(get_poll_fds()[client_fd].fd);
     get_poll_fds().erase(get_poll_fds().begin() + client_fd);
+    client_to_port.erase(get_poll_fds()[client_fd].fd);
     return;
   }
   Directive *rootDirective = NULL;
@@ -124,11 +124,10 @@ void RunServer::handle_client_data(size_t client_fd, std::string receivedPort) {
     GenerateHTTPResponse generateHTTPResponse(*rootDirective, httpRequest);
     generateHTTPResponse.setNextHandler(&printResponse);
 
-    std::string host = httpRequest.getServerName();
-    const Directive *hostDirective = rootDirective->findDirective(host);
-    std::vector<std::string> hostReveivablePorts =
-        hostDirective->getValues("listen");
-    if (!isContain(hostReveivablePorts, receivedPort)) {
+    const Directive *hostDirective =
+        rootDirective->findDirective(httpRequest.getServerName());
+    if (hostDirective == NULL ||
+        !isContain(hostDirective->getValues("listen"), receivedPort)) {
       // 指定ホストは指定のポートをリッスンしない場合
       httpResponse.setHttpStatusCode(400);  // Bad Request
       generateHTTPResponse.handleRequest(httpResponse);
@@ -152,6 +151,7 @@ void RunServer::handle_client_data(size_t client_fd, std::string receivedPort) {
   // Connection: closeの場合は接続を閉じる
   close(get_poll_fds()[client_fd].fd);
   get_poll_fds().erase(get_poll_fds().begin() + client_fd);
+  client_to_port.erase(get_poll_fds()[client_fd].fd);
 }
 
 static std::string int2str(int nb) {
@@ -171,12 +171,10 @@ void RunServer::process_poll_events_multiport(MultiPortServer &server) {
       // サーバーソケットのイベントかチェック
       if (server.isServerFd(current_fd)) {
         int port = server.getPortByFd(current_fd);
-        std::cout << "New connection on port " << port << std::endl;
         handle_new_connection(current_fd, port);
       } else {
         // クライアント接続からのデータ
         int server_port = client_to_port[current_fd];
-        std::cout << "Data received on port " << server_port << std::endl;
         handle_client_data(i, int2str(server_port));
       }
     }
