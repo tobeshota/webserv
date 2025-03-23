@@ -1,0 +1,30 @@
+/* 全体のスタイル */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f8f9fa;
+    color: #333;
+    text-align: center;
+    padding: 50px;
+}
+
+/* コンテナのスタイル */
+.error-container {
+    max-width: 600px;
+    margin: 0 auto;
+    background: #fff;
+    padding: 40px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+/* エラーメッセージのスタイル */
+h1 {
+    font-size: 48px;
+    margin-bottom: 10px;
+    color: #dc3545;
+}
+
+p {
+    font-size: 18px;
+    margin-bottom: 20px;
+}

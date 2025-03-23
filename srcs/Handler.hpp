@@ -1,20 +1,16 @@
 #pragma once
 
-#include "Conf.hpp"
+#include "Directive.hpp"
 #include "HTTPRequest.hpp"
 #include "HTTPResponse.hpp"
 
-class Handler : public Conf, HTTPRequest, HTTPResponse {
+class Handler {
  protected:
-  Conf _conf;
-  HTTPResponse _http_response;
-  Handler* nextHandler;
+  Handler* _nextHandler;
 
  public:
-  Handler();
-  virtual ~Handler() {}
-
-  void setNextHandler(Handler* handler) { nextHandler = handler; }
-
-  virtual void handleRequest(const HTTPRequest& request) = 0;
+  Handler() : _nextHandler(NULL){};
+  virtual ~Handler() { ; }
+  void setNextHandler(Handler* handler) { _nextHandler = handler; }
+  virtual void handleRequest(HTTPResponse& httpResponse) = 0;
 };

@@ -1,5 +1,7 @@
 services:
   webserv:
+    image: webserv_img
+    container_name: webserv
     build:
       context: .
       dockerfile: Dockerfile
@@ -10,6 +12,8 @@ services:
       - ./Makefile:/app/Makefile
       - ./conf:/app/conf
       - ./html:/app/html
+      - ./redirected:/app/redirected
+      - ./cgi:/app/cgi
     ports:
       - "8080:80"
       - "8001:8001"
