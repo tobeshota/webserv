@@ -358,7 +358,7 @@ HTTPRequestParser::ParseResult HTTPRequestParser::parse(std::string& buffer) {
             errorMessage = "チャンクサイズがありません";
             return ParsingError;
           }
-          chunkSize = strtol(chunkSizeStr.c_str(), NULL, 16);
+          chunkSize = std::strtol(chunkSizeStr.c_str(), NULL, 16);
           chunkSizeStr.clear();
           state = ChunkSizeNewline;
         } else {
@@ -502,10 +502,10 @@ bool HTTPRequestParser::parseHeader(const std::string& line) {
 std::string HTTPRequestParser::trimString(const std::string& str) const {
   std::string result = str;
   // 先頭の空白を削除
-  while (!result.empty() && isspace(result[0])) result.erase(0, 1);
+  while (!result.empty() && std::isspace(result[0])) result.erase(0, 1);
 
   // 末尾の空白を削除
-  while (!result.empty() && isspace(result[result.length() - 1]))
+  while (!result.empty() && std::isspace(result[result.length() - 1]))
     result.erase(result.length() - 1);
 
   return result;
@@ -556,6 +556,15 @@ void HTTPRequestParser::reset() {
   currentHeaderValue.clear();
 }
 
+int ft_strcasecmp(const char* a, const char* b) {
+  for (;; a++, b++) {
+    int d = std::tolower(*a) - std::tolower(*b);
+    if (d != 0 || !*a) {
+      return d;
+    }
+  }
+}
+
 HTTPRequest HTTPRequestParser::createRequest() const {
   if (!isComplete() || hasError()) {
     return HTTPRequest();
@@ -567,7 +576,7 @@ HTTPRequest HTTPRequestParser::createRequest() const {
   std::map<std::string, std::string>::const_iterator it =
       headers.find("Connection");
   if (it != headers.end()) {
-    if (strcasecmp(it->second.c_str(), "keep-alive") == 0) {
+    if (ft_strcasecmp(it->second.c_str(), "keep-alive") == 0) {
       keepAlive = true;
     }
   } else {
