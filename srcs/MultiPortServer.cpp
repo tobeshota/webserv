@@ -60,6 +60,4 @@ void MultiPortServer::addServerFd(int fd, int port) {
   address.sin_addr.s_addr = INADDR_ANY;
   address.sin_port = htons(port);
   addrs.push_back(address);
-
-  std::cout << "Added server fd " << fd << " for port " << port << std::endl;
 }

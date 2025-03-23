@@ -27,8 +27,6 @@ std::vector<int> getPorts() {
   }
   // ポート番号を取得
   std::vector<std::string> listen_directives = directive->getValues("listen");
-  std::cout << "listen_directives.size() " << listen_directives.size()
-            << std::endl;
   for (size_t i = 0; i < listen_directives.size(); ++i) {
     std::string port_str = listen_directives[i];
     int port = string_to_int(port_str);
@@ -81,7 +79,6 @@ int webserv(int argc, char** argv) {
     run_server.add_poll_fd(poll_fd);
   }
 
-  // イベントループ開始（メソッド名が正確に一致していることを確認）
   std::cout << "Starting multiport server" << std::endl;
   run_server.runMultiPort(
       server);  // このメソッド名が正確に一致していることを確認
