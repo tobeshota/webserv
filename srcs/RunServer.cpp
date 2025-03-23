@@ -124,11 +124,10 @@ void RunServer::handle_client_data(size_t client_fd, std::string receivedPort) {
     GenerateHTTPResponse generateHTTPResponse(*rootDirective, httpRequest);
     generateHTTPResponse.setNextHandler(&printResponse);
 
-    std::string host = httpRequest.getServerName();
-    const Directive *hostDirective = rootDirective->findDirective(host);
-    std::vector<std::string> hostReveivablePorts =
-        hostDirective->getValues("listen");
-    if (!isContain(hostReveivablePorts, receivedPort)) {
+    const Directive *hostDirective =
+        rootDirective->findDirective(httpRequest.getServerName());
+    if (hostDirective == NULL ||
+        !isContain(hostDirective->getValues("listen"), receivedPort)) {
       // 指定ホストは指定のポートをリッスンしない場合
       httpResponse.setHttpStatusCode(400);  // Bad Request
       generateHTTPResponse.handleRequest(httpResponse);

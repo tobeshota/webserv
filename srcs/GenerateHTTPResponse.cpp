@@ -175,7 +175,7 @@ std::string GenerateHTTPResponse::generateHttpResponseBody(
     httpResponseBody = readFile(CGI_PAGE);
   }
   // ディレクトリリスニングすべきか
-  else if (getDirectiveValue("autoindex") == "on" &&
+  else if (status_code != 400 && getDirectiveValue("autoindex") == "on" &&
            getDirectiveValue("root") != "" &&
            isDirectory(getDirectiveValue("root") + _httpRequest.getURL())) {
     ListenDirectory listenDirectory(getDirectiveValue("root") +
