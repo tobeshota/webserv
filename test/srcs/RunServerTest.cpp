@@ -188,7 +188,7 @@ TEST_F(RunServerTest, HandleClientDataBasic) {
 
   // データを書き込む
   const char* testData = "GET / HTTP/1.1\r\nHost: example.com\r\n\r\n";
-  ASSERT_GT(write(fds[1], testData, strlen(testData)), 0);
+  ASSERT_GT(write(fds[1], testData, std::string(testData).size()), 0);
 
   // 標準エラー出力をキャプチャ (HTTPリクエストパースエラーなど捕捉)
   testing::internal::CaptureStderr();
