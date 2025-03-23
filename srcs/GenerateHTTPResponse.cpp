@@ -176,7 +176,8 @@ std::string GenerateHTTPResponse::generateHttpResponseBody(
   }
   // ディレクトリリスニングすべきか
   else if (getDirectiveValue("autoindex") == "on" &&
-           getDirectiveValue("root") != "" && isDirectory(getDirectiveValue("root") + _httpRequest.getURL())) {
+           getDirectiveValue("root") != "" &&
+           isDirectory(getDirectiveValue("root") + _httpRequest.getURL())) {
     ListenDirectory listenDirectory(getDirectiveValue("root") +
                                     _httpRequest.getURL());
     HTTPResponse response;
