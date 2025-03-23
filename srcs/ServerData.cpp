@@ -26,27 +26,27 @@ void ServerData::set_server_fd() {
   // ソケットの作成
   if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
     perror("socket failed");
-    exit(EXIT_FAILURE);
+    std::exit(EXIT_FAILURE);
   }
   // ソケットの再利用を許可する設定を追加
   int opt = 1;
   if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
     perror("setsockopt failed");
-    exit(EXIT_FAILURE);
+    std::exit(EXIT_FAILURE);
   }
 }
 
 void ServerData::server_bind() {
   if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
     perror("bind failed");
-    exit(EXIT_FAILURE);
+    std::exit(EXIT_FAILURE);
   }
 }
 
 void ServerData::server_listen() {
   if (listen(server_fd, MAX_CONNECTION) < 0) {
     perror("listen");
-    exit(EXIT_FAILURE);
+    std::exit(EXIT_FAILURE);
   }
 }
 
@@ -55,7 +55,7 @@ void ServerData::server_accept() {
       accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen);
   if (new_socket < 0) {
     perror("accept");
-    exit(EXIT_FAILURE);
+    std::exit(EXIT_FAILURE);
   }
 }
 
