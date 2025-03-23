@@ -263,7 +263,7 @@ bool CGI::executeCGI(const std::string& scriptPath) {
     // CGI出力をファイルにリダイレクト
     int fd = open(CGI_PAGE, O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (fd == -1) {
-      exit(1);
+      std::exit(1);
     }
 
     // 標準出力をファイルにリダイレクト
@@ -338,7 +338,7 @@ bool CGI::executeCGI(const std::string& scriptPath) {
     }
 
     // すべて失敗した場合
-    exit(1);
+    std::exit(1);
   } else {
     // 親プロセス
     cleanupEnv(envp);
