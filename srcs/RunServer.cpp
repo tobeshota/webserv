@@ -94,7 +94,7 @@ void RunServer::handle_client_data(size_t client_fd, std::string receivedPort) {
   try {
     // HTTPリクエストをパース
     HTTPRequestParser parser;
-    if (parser.feed(buffer, strlen(buffer))) {
+    if (parser.feed(buffer, std::string(buffer).size())) {
       if (parser.hasError()) {
         throw std::invalid_argument("Failed to parse HTTP request");
       }
