@@ -152,6 +152,7 @@ void RunServer::handle_client_data(size_t client_fd, std::string receivedPort) {
   // Connection: closeの場合は接続を閉じる
   close(get_poll_fds()[client_fd].fd);
   get_poll_fds().erase(get_poll_fds().begin() + client_fd);
+  client_to_port.erase(get_poll_fds()[client_fd].fd);
 }
 
 static std::string int2str(int nb) {
