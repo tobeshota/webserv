@@ -5,7 +5,7 @@
 
 # Description
 <p align="center">
- <img width="480" alt="demo" src="https://github.com/user-attachments/assets/a7766069-205a-479e-8f9b-b20359da822c">
+ <img width="720" alt="demo" src="https://github.com/user-attachments/assets/681b7f76-bdf8-4f43-8845-6cf468f62ab2">
 </p>
 
 We implemented the main features of _nginx_.  
