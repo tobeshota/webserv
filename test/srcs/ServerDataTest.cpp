@@ -137,3 +137,122 @@ TEST_F(ServerDataTest, SetNewSocket) {
   serverData->set_new_socket(5);
   EXPECT_EQ(serverData->get_new_socket(), 5);
 }
+
+class NonBlockingSocketTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    // テストの前処理
+  }
+
+  void TearDown() override {
+    // テストの後処理
+  }
+};
+
+// ソケットのフラグを取得するヘルパー関数
+int getSocketFlags(int socketFd) { return fcntl(socketFd, F_GETFL, 0); }
+
+// ServerDataクラスの初期化でノンブロッキングソケットが作成されるかテスト
+TEST_F(NonBlockingSocketTest, ServerSocketIsNonBlocking) {
+  // ServerDataのインスタンスを作成
+  ServerData serverData;
+
+  // サーバーソケットを設定
+  serverData.set_server_fd();
+
+  // サーバーソケットのファイルディスクリプタを取得
+  int serverFd = serverData.get_server_fd();
+
+  // ソケットが有効なFDかを確認
+  ASSERT_GT(serverFd, 0) << "サーバーソケットの作成に失敗しました";
+
+  // ソケットのフラグを取得
+  int flags = getSocketFlags(serverFd);
+
+  // ノンブロッキングフラグが設定されているか確認
+  EXPECT_TRUE((flags & O_NONBLOCK) != 0)
+      << "サーバーソケットがノンブロッキングモードに設定されていません";
+
+  // テスト後にソケットをクローズ
+  close(serverFd);
+}
+
+// 実際に接続を試みてノンブロッキング動作を確認するテスト
+TEST_F(NonBlockingSocketTest, AcceptIsNonBlocking) {
+  // ServerDataのインスタンスを作成
+  ServerData serverData;
+
+  // サーバーソケットを設定
+  serverData.set_server_fd();
+
+  // アドレスデータの設定
+  serverData.set_address_data();
+
+  // バインドとリスン
+  serverData.server_bind();
+  serverData.server_listen();
+
+  // acceptを呼び出し - 接続がない状態では即座に戻るべき
+  int result = accept(serverData.get_server_fd(), NULL, NULL);
+
+  // ノンブロッキングの場合、接続がなければEAGAINまたはEWOULDBLOCKエラーが発生するはず
+  EXPECT_TRUE(result == -1 && (errno == EAGAIN || errno == EWOULDBLOCK))
+      << "accept呼び出しがブロックするか、予期しないエラーが発生しました: "
+      << strerror(errno);
+
+  // テスト後にソケットをクローズ
+  close(serverData.get_server_fd());
+}
+
+// 複数ポートでノンブロッキングが機能するかテスト
+TEST_F(NonBlockingSocketTest, MultiplePortsNonBlocking) {
+  // 異なるポート番号で複数のServerDataインスタンスを作成
+  ServerData server1(8080);
+  ServerData server2(8081);
+
+  // サーバーソケットを設定
+  server1.set_server_fd();
+  server2.set_server_fd();
+
+  // 両方のソケットがノンブロッキングモードに設定されているか確認
+  int flags1 = getSocketFlags(server1.get_server_fd());
+  int flags2 = getSocketFlags(server2.get_server_fd());
+
+  EXPECT_TRUE((flags1 & O_NONBLOCK) != 0)
+      << "サーバー1のソケットがノンブロッキングモードに設定されていません";
+  EXPECT_TRUE((flags2 & O_NONBLOCK) != 0)
+      << "サーバー2のソケットがノンブロッキングモードに設定されていません";
+
+  // テスト後にソケットをクローズ
+  close(server1.get_server_fd());
+  close(server2.get_server_fd());
+}
+
+// エラー条件でのノンブロッキングテスト
+TEST_F(NonBlockingSocketTest, NonBlockingErrorHandling) {
+  // テスト用のServerDataインスタンス
+  ServerData serverData;
+
+  // サーバーソケットを設定
+  serverData.set_server_fd();
+  serverData.set_address_data();
+  serverData.server_bind();
+  serverData.server_listen();
+
+  // 無効なソケットディスクリプタでaccept操作をテスト
+  int invalidFd = -1;
+  int result = accept(invalidFd, NULL, NULL);
+
+  // 無効なディスクリプタではEBADFエラーが発生するはず
+  EXPECT_EQ(result, -1);
+  EXPECT_EQ(errno, EBADF);
+
+  // 通常のソケットでノンブロッキングaccept
+  result = accept(serverData.get_server_fd(), NULL, NULL);
+
+  // 接続がなければEAGAINまたはEWOULDBLOCKが期待される
+  EXPECT_TRUE(result == -1 && (errno == EAGAIN || errno == EWOULDBLOCK));
+
+  // テスト後にソケットをクローズ
+  close(serverData.get_server_fd());
+}
