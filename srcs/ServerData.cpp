@@ -34,6 +34,11 @@ void ServerData::set_server_fd() {
     perror("setsockopt failed");
     std::exit(EXIT_FAILURE);
   }
+  // ソケットを非ブロッキングモードに設定
+  if (fcntl(server_fd, F_SETFL, O_NONBLOCK) < 0) {
+    perror("fcntl failed");
+    std::exit(EXIT_FAILURE);
+  }
 }
 
 void ServerData::server_bind() {

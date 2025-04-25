@@ -1,5 +1,6 @@
 #pragma once
 
+#include <fcntl.h>
 #include <netinet/in.h>
 #include <poll.h>
 #include <sys/socket.h>

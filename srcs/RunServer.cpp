@@ -32,7 +32,7 @@ void RunServer::add_poll_fd(pollfd poll_fd) { poll_fds.push_back(poll_fd); }
 // 新しい接続を処理する関数
 void RunServer::handle_new_connection(int server_fd, int server_port) {
   int new_socket = accept(server_fd, NULL, NULL);
-  if (new_socket == -1) {
+  if (new_socket == -1 || errno == EAGAIN || errno == EWOULDBLOCK) {
     perror("accept");
     return;
   }
