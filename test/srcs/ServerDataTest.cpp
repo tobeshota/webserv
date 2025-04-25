@@ -198,14 +198,17 @@ TEST_F(NonBlockingSocketTest, AcceptIsNonBlocking) {
 
     // ノンブロッキングの場合、接続がなければEAGAINまたはEWOULDBLOCKエラーが発生するはず
     // Ubuntu環境では、他のエラーコードが返される可能性もあるため、より一般的な判定に修正
-    EXPECT_EQ(result, -1) << "accept呼び出しが失敗せずに戻りました。接続がないはずなのに接続を受け付けています。";
+    EXPECT_EQ(result, -1) << "accept呼び出しが失敗せずに戻りました。接続がない"
+                             "はずなのに接続を受け付けています。";
 
     // エラー番号が設定されていることを確認
-    EXPECT_TRUE(errno != 0) << "エラーが設定されていません: " << strerror(errno);
+    EXPECT_TRUE(errno != 0)
+        << "エラーが設定されていません: " << strerror(errno);
 
     // 一般的なエラー情報を出力
     if (result == -1) {
-      std::cout << "Accept failed with errno: " << errno << " (" << strerror(errno) << ")" << std::endl;
+      std::cout << "Accept failed with errno: " << errno << " ("
+                << strerror(errno) << ")" << std::endl;
     }
   } catch (const std::exception& e) {
     ADD_FAILURE() << "例外が発生しました: " << e.what();
@@ -261,7 +264,7 @@ TEST_F(NonBlockingSocketTest, NonBlockingErrorHandling) {
     EXPECT_EQ(errno, EBADF);
 
     // 通常のソケットでノンブロッキングaccept
-    errno = 0; // エラーコードをリセット
+    errno = 0;  // エラーコードをリセット
     result = accept(serverData.get_server_fd(), NULL, NULL);
 
     // 接続がなければエラーが返されるはず - Ubuntu互換のために一般化
@@ -270,7 +273,8 @@ TEST_F(NonBlockingSocketTest, NonBlockingErrorHandling) {
 
     // デバッグ情報の出力
     if (result == -1) {
-      std::cout << "Accept on valid socket failed with errno: " << errno << " (" << strerror(errno) << ")" << std::endl;
+      std::cout << "Accept on valid socket failed with errno: " << errno << " ("
+                << strerror(errno) << ")" << std::endl;
     }
   } catch (const std::exception& e) {
     ADD_FAILURE() << "例外が発生しました: " << e.what();
