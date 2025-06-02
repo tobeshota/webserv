@@ -13,8 +13,8 @@ std::string GenerateHTTPResponse::generateHttpStatusLine(
   std::string httpStatusLine =
       std::string(_httpRequest.getVersion()) + " ";  //  http version
   httpStatusLine += int2str(status_code);            //  http status code
-  httpStatusLine +=
-      " " + statusCodes.getMessage(status_code) + "\r\n";  //  http status message
+  httpStatusLine += " " + statusCodes.getMessage(status_code) +
+                    "\r\n";  //  http status message
   return httpStatusLine;
 }
 
@@ -36,7 +36,8 @@ std::string readFile(const std::string& filePath) {
 }
 
 // ファイル拡張子を取得するヘルパー関数
-std::string GenerateHTTPResponse::getFileExtension(const std::string& filePath) {
+std::string GenerateHTTPResponse::getFileExtension(
+    const std::string& filePath) {
   size_t dotPos = filePath.find_last_of('.');
   if (dotPos != std::string::npos && dotPos < filePath.length() - 1) {
     return filePath.substr(dotPos);
@@ -48,7 +49,7 @@ std::string GenerateHTTPResponse::getFileExtension(const std::string& filePath) 
 std::string GenerateHTTPResponse::getMimeType(const std::string& filePath) {
   std::string extension = getFileExtension(filePath);
   if (extension.empty()) {
-    return "text/html"; // デフォルト
+    return "text/html";  // デフォルト
   }
 
   // 設定ファイルからContent-Typeを探す
@@ -60,7 +61,8 @@ std::string GenerateHTTPResponse::getMimeType(const std::string& filePath) {
     std::string contentType = locationDirective->getValue("Content-Type");
     if (!contentType.empty()) {
       // セミコロンで終わっている場合は除去
-      if (!contentType.empty() && contentType[contentType.length() - 1] == ';') {
+      if (!contentType.empty() &&
+          contentType[contentType.length() - 1] == ';') {
         contentType = contentType.substr(0, contentType.length() - 1);
       }
       return contentType;
@@ -90,7 +92,7 @@ std::string GenerateHTTPResponse::getMimeType(const std::string& filePath) {
   if (extension == ".ttf") return "font/ttf";
   if (extension == ".eot") return "application/vnd.ms-fontobject";
 
-  return "text/html"; // デフォルト
+  return "text/html";  // デフォルト
 }
 
 std::string GenerateHTTPResponse::generateHttpResponseHeader(
@@ -173,7 +175,8 @@ std::string GenerateHTTPResponse::getSuccessPathForHttpResponseBody() {
     }
     // インデックスディレクティブがなければデフォルトのindex.htmlを使用
     std::string defaultIndexFileName =
-        requestedURL[requestedURL.length() - 1] == '/' ? "index.html" : "/index.html";
+        requestedURL[requestedURL.length() - 1] == '/' ? "index.html"
+                                                       : "/index.html";
     return rootValue + requestedURL + defaultIndexFileName;
   }
 
@@ -260,7 +263,8 @@ std::string GenerateHTTPResponse::generateHttpResponseBody(
     httpResponseBody = readFile(getErrorPathForHttpResponseBody(status_code));
     // デフォルトエラーページも読めない場合は最低限のHTMLを生成
     if (httpResponseBody.empty()) {
-      httpResponseBody = "<html><body><h1>Error " + int2str(status_code) + "</h1></body></html>";
+      httpResponseBody = "<html><body><h1>Error " + int2str(status_code) +
+                         "</h1></body></html>";
     }
   }
   return httpResponseBody;
