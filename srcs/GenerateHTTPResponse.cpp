@@ -122,6 +122,12 @@ bool isDirectory(const std::string& filePath) {
   return S_ISDIR(st.st_mode);
 }
 
+// ファイルが存在するかチェックする関数
+bool GenerateHTTPResponse::fileExists(const std::string& filePath) {
+  std::ifstream file(filePath.c_str());
+  return file.good();
+}
+
 // エラーステータスコード（2xxまたは301）の場合のファイルパスを取得する
 std::string GenerateHTTPResponse::getErrorPathForHttpResponseBody(
     const int status_code) {
@@ -141,11 +147,14 @@ std::string GenerateHTTPResponse::getErrorPathForHttpResponseBody(
     rootValue = hostDirective->getValue("root");
   }
 
-  // カスタムエラーページが設定されており、かつ空でなければそのパスを返す
-  if (!errorPageValue.empty() &&
-      !readFile(rootValue + errorPageValue).empty()) {
-    return rootValue + errorPageValue;
+  // カスタムエラーページが設定されており、かつファイルが存在すればそのパスを返す
+  if (!errorPageValue.empty() && !rootValue.empty()) {
+    std::string fullPath = rootValue + errorPageValue;
+    if (fileExists(fullPath)) {
+      return fullPath;
+    }
   }
+
   // 設定がなければデフォルトのエラーページを返す
   return DEFAULT_ERROR_PAGE;
 }
@@ -191,7 +200,11 @@ static bool endsWith(const std::string& str, const std::string& suffix) {
 }
 
 std::string GenerateHTTPResponse::getDirectiveValue(std::string directiveKey) {
-  return getDirectiveValues(directiveKey)[0];
+  std::vector<std::string> values = getDirectiveValues(directiveKey);
+  if (values.empty() || (values.size() == 1 && values[0].empty())) {
+    return "";
+  }
+  return values[0];
 }
 
 std::vector<std::string> GenerateHTTPResponse::getDirectiveValues(
@@ -208,27 +221,27 @@ std::vector<std::string> GenerateHTTPResponse::getDirectiveValues(
 
   // 指定のホスト内の指定のロケーション内で指定ディレクティブdirectiveKeyの値があれば取得する
   std::string requestedURL = _httpRequest.getURL();
-  if (isDirectory(rootValue + requestedURL)) {
+  if (!rootValue.empty() && isDirectory(rootValue + requestedURL)) {
     const Directive* locationDirective = _rootDirective.findDirective(
         _httpRequest.getServerName(), "location", requestedURL);
     if (locationDirective != NULL) {
       directiveValues = locationDirective->getValues(directiveKey);
-      if (!directiveValues.empty()) return directiveValues;
+      if (!directiveValues.empty() && !directiveValues[0].empty()) {
+        return directiveValues;
+      }
     }
   }
 
   // 「指定のホスト内直下にある」かどうかを調べる．
   if (hostDirective != NULL) {
     directiveValues = hostDirective->getValues(directiveKey, false);
-    if (!directiveValues.empty()) {
+    if (!directiveValues.empty() && !directiveValues[0].empty()) {
       return directiveValues;
     }
   }
 
-  // 何もないものを返す
-  std::vector<std::string> emptyVector;
-  emptyVector.push_back("");  // 空文字列を追加
-  return emptyVector;
+  // 空のベクターを返す
+  return std::vector<std::string>();
 }
 
 std::string GenerateHTTPResponse::generateHttpResponseBody(
