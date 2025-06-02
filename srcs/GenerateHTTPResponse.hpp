@@ -22,6 +22,10 @@ class GenerateHTTPResponse : public Handler {
   std::string getSuccessPathForHttpResponseBody();
   std::string getErrorPathForHttpResponseBody(const int status_code);
 
+  // MIME タイプ関連のメソッドを追加
+  std::string getMimeType(const std::string& filePath);
+  std::string getFileExtension(const std::string& filePath);
+
  public:
   GenerateHTTPResponse(Directive rootDirective, HTTPRequest httpRequest);
   std::string getDirectiveValue(std::string directiveKey);

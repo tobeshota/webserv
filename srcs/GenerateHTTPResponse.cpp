@@ -14,7 +14,7 @@ std::string GenerateHTTPResponse::generateHttpStatusLine(
       std::string(_httpRequest.getVersion()) + " ";  //  http version
   httpStatusLine += int2str(status_code);            //  http status code
   httpStatusLine +=
-      " " + statusCodes.getMessage(status_code) + "\n";  //  http status message
+      " " + statusCodes.getMessage(status_code) + "\r\n";  //  http status message
   return httpStatusLine;
 }
 
@@ -35,13 +35,79 @@ std::string readFile(const std::string& filePath) {
   return buffer.str();
 }
 
+// ファイル拡張子を取得するヘルパー関数
+std::string GenerateHTTPResponse::getFileExtension(const std::string& filePath) {
+  size_t dotPos = filePath.find_last_of('.');
+  if (dotPos != std::string::npos && dotPos < filePath.length() - 1) {
+    return filePath.substr(dotPos);
+  }
+  return "";
+}
+
+// MIMEタイプを取得する関数
+std::string GenerateHTTPResponse::getMimeType(const std::string& filePath) {
+  std::string extension = getFileExtension(filePath);
+  if (extension.empty()) {
+    return "text/html"; // デフォルト
+  }
+
+  // 設定ファイルからContent-Typeを探す
+  std::string wildcardPattern = "*" + extension;
+  const Directive* locationDirective = _rootDirective.findDirective(
+      _httpRequest.getServerName(), "location", wildcardPattern);
+
+  if (locationDirective != NULL) {
+    std::string contentType = locationDirective->getValue("Content-Type");
+    if (!contentType.empty()) {
+      // セミコロンで終わっている場合は除去
+      if (!contentType.empty() && contentType[contentType.length() - 1] == ';') {
+        contentType = contentType.substr(0, contentType.length() - 1);
+      }
+      return contentType;
+    }
+  }
+
+  // 設定がない場合はデフォルトのMIMEタイプを返す
+  if (extension == ".html" || extension == ".htm") return "text/html";
+  if (extension == ".js") return "text/javascript";
+  if (extension == ".css") return "text/css";
+  if (extension == ".json") return "application/json";
+  if (extension == ".png") return "image/png";
+  if (extension == ".jpg" || extension == ".jpeg") return "image/jpeg";
+  if (extension == ".gif") return "image/gif";
+  if (extension == ".svg") return "image/svg+xml";
+  if (extension == ".pdf") return "application/pdf";
+  if (extension == ".xml") return "application/xml";
+  if (extension == ".mp3") return "audio/mpeg";
+  if (extension == ".wav") return "audio/wav";
+  if (extension == ".ogg") return "audio/ogg";
+  if (extension == ".mp4") return "video/mp4";
+  if (extension == ".webm") return "video/webm";
+  if (extension == ".ico") return "image/x-icon";
+  if (extension == ".txt") return "text/plain";
+  if (extension == ".woff") return "font/woff";
+  if (extension == ".woff2") return "font/woff2";
+  if (extension == ".ttf") return "font/ttf";
+  if (extension == ".eot") return "application/vnd.ms-fontobject";
+
+  return "text/html"; // デフォルト
+}
+
 std::string GenerateHTTPResponse::generateHttpResponseHeader(
     const std::string& httpResponseBody) {
-  std::string httpResponseHeader = "Server: webserv\n";
-  httpResponseHeader += "Content-Type: text/html\n";
+  std::string httpResponseHeader = "Server: webserv\r\n";
+
+  // ファイルパスを取得してMIMEタイプを設定
+  std::string filePath;
+  if (_httpRequest.getMethod() != "DELETE") {
+    filePath = getSuccessPathForHttpResponseBody();
+  }
+  std::string mimeType = getMimeType(filePath);
+
+  httpResponseHeader += "Content-Type: " + mimeType + "\r\n";
   httpResponseHeader +=
-      "Content-Length: " + int2str(httpResponseBody.size()) + "\n";
-  httpResponseHeader += "Connection: close\n";
+      "Content-Length: " + int2str(httpResponseBody.size()) + "\r\n";
+  httpResponseHeader += "Connection: close\r\n";
   return httpResponseHeader;
 }
 
@@ -107,7 +173,7 @@ std::string GenerateHTTPResponse::getSuccessPathForHttpResponseBody() {
     }
     // インデックスディレクティブがなければデフォルトのindex.htmlを使用
     std::string defaultIndexFileName =
-        requestedURL.end()[-1] == '/' ? "index.html" : "/index.html";
+        requestedURL[requestedURL.length() - 1] == '/' ? "index.html" : "/index.html";
     return rootValue + requestedURL + defaultIndexFileName;
   }
 
@@ -192,6 +258,10 @@ std::string GenerateHTTPResponse::generateHttpResponseBody(
   // 読み取ったファイルが空の場合
   if (httpResponseBody.empty()) {
     httpResponseBody = readFile(getErrorPathForHttpResponseBody(status_code));
+    // デフォルトエラーページも読めない場合は最低限のHTMLを生成
+    if (httpResponseBody.empty()) {
+      httpResponseBody = "<html><body><h1>Error " + int2str(status_code) + "</h1></body></html>";
+    }
   }
   return httpResponseBody;
 }
