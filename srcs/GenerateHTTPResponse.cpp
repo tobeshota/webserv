@@ -261,11 +261,6 @@ std::string GenerateHTTPResponse::generateHttpResponseBody(
   // 読み取ったファイルが空の場合
   if (httpResponseBody.empty()) {
     httpResponseBody = readFile(getErrorPathForHttpResponseBody(status_code));
-    // デフォルトエラーページも読めない場合は最低限のHTMLを生成
-    if (httpResponseBody.empty()) {
-      httpResponseBody = "<html><body><h1>Error " + int2str(status_code) +
-                         "</h1></body></html>";
-    }
   }
   return httpResponseBody;
 }
