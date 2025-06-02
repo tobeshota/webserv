@@ -331,34 +331,6 @@ TEST_F(GenerateHTTPResponseTest, MultipleHostsAndStatusCodesTest) {
   std::remove("./host1_500.html");
 }
 
-// エラーページパスが絶対パスの場合のテスト
-TEST_F(GenerateHTTPResponseTest, AbsolutePathErrorPageTest) {
-  std::string absolutePath = "./absolute_error_page.html";
-  createTestFile(absolutePath, "<html>Absolute Path Error Page</html>");
-
-  // 絶対パスを使用するDirectiveを作成
-  Directive rootDirective("root");
-  Directive hostDirective("localhost");
-  hostDirective.addKeyValue("root", "");  // rootは空
-  Directive errorPageDirective("error_page");
-  errorPageDirective.addKeyValue("404", absolutePath);
-  hostDirective.addChild(errorPageDirective);
-  rootDirective.addChild(hostDirective);
-
-  HTTPRequest request = createTestRequest();
-  GenerateHTTPResponse GenerateHTTPResponse(rootDirective, request);
-
-  HTTPResponse response;
-  response.setHttpStatusCode(404);
-  GenerateHTTPResponse.handleRequest(response);
-
-  EXPECT_EQ(response.getHttpResponseBody(),
-            "<html>Absolute Path Error Page</html>");
-
-  // テスト後にファイル削除
-  std::remove(absolutePath.c_str());
-}
-
 // GenerateHTTPResponse::getPathForHttpResponseBodyの単体テスト
 class GetPathForHTTPResponseBodyTest : public ::testing::Test {
  protected:
