@@ -9,7 +9,7 @@
 #include "Handler.hpp"
 #include "ListenDirectory.hpp"
 #include "StatusCodes.hpp"
-#define DEFAULT_ERROR_PAGE "./html/defaultErrorPage.html"
+#define DEFAULT_ERROR_PAGE "html/defaultErrorPage.html"
 
 class GenerateHTTPResponse : public Handler {
  private:
@@ -21,6 +21,13 @@ class GenerateHTTPResponse : public Handler {
   // utils
   std::string getSuccessPathForHttpResponseBody();
   std::string getErrorPathForHttpResponseBody(const int status_code);
+
+  // MIME タイプ関連のメソッドを追加
+  std::string getMimeType(const std::string& filePath);
+  std::string getFileExtension(const std::string& filePath);
+
+  // ファイル存在チェック関数を追加
+  bool fileExists(const std::string& filePath);
 
  public:
   GenerateHTTPResponse(Directive rootDirective, HTTPRequest httpRequest);
