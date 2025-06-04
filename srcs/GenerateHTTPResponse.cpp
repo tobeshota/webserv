@@ -13,8 +13,8 @@ std::string GenerateHTTPResponse::generateHttpStatusLine(
   std::string httpStatusLine =
       std::string(_httpRequest.getVersion()) + " ";  //  http version
   httpStatusLine += int2str(status_code);            //  http status code
-  httpStatusLine +=
-      " " + statusCodes.getMessage(status_code) + "\n";  //  http status message
+  httpStatusLine += " " + statusCodes.getMessage(status_code) +
+                    "\r\n";  //  http status message
   return httpStatusLine;
 }
 
@@ -35,13 +35,81 @@ std::string readFile(const std::string& filePath) {
   return buffer.str();
 }
 
+// ファイル拡張子を取得するヘルパー関数
+std::string GenerateHTTPResponse::getFileExtension(
+    const std::string& filePath) {
+  size_t dotPos = filePath.find_last_of('.');
+  if (dotPos != std::string::npos && dotPos < filePath.length() - 1) {
+    return filePath.substr(dotPos);
+  }
+  return "";
+}
+
+// MIMEタイプを取得する関数
+std::string GenerateHTTPResponse::getMimeType(const std::string& filePath) {
+  std::string extension = getFileExtension(filePath);
+  if (extension.empty()) {
+    return "text/html";  // デフォルト
+  }
+
+  // 設定ファイルからContent-Typeを探す
+  std::string wildcardPattern = "*" + extension;
+  const Directive* locationDirective = _rootDirective.findDirective(
+      _httpRequest.getServerName(), "location", wildcardPattern);
+
+  if (locationDirective != NULL) {
+    std::string contentType = locationDirective->getValue("Content-Type");
+    if (!contentType.empty()) {
+      // セミコロンで終わっている場合は除去
+      if (!contentType.empty() &&
+          contentType[contentType.length() - 1] == ';') {
+        contentType = contentType.substr(0, contentType.length() - 1);
+      }
+      return contentType;
+    }
+  }
+
+  // 設定がない場合はデフォルトのMIMEタイプを返す
+  if (extension == ".html" || extension == ".htm") return "text/html";
+  if (extension == ".js") return "text/javascript";
+  if (extension == ".css") return "text/css";
+  if (extension == ".json") return "application/json";
+  if (extension == ".png") return "image/png";
+  if (extension == ".jpg" || extension == ".jpeg") return "image/jpeg";
+  if (extension == ".gif") return "image/gif";
+  if (extension == ".svg") return "image/svg+xml";
+  if (extension == ".pdf") return "application/pdf";
+  if (extension == ".xml") return "application/xml";
+  if (extension == ".mp3") return "audio/mpeg";
+  if (extension == ".wav") return "audio/wav";
+  if (extension == ".ogg") return "audio/ogg";
+  if (extension == ".mp4") return "video/mp4";
+  if (extension == ".webm") return "video/webm";
+  if (extension == ".ico") return "image/x-icon";
+  if (extension == ".txt") return "text/plain";
+  if (extension == ".woff") return "font/woff";
+  if (extension == ".woff2") return "font/woff2";
+  if (extension == ".ttf") return "font/ttf";
+  if (extension == ".eot") return "application/vnd.ms-fontobject";
+
+  return "text/html";  // デフォルト
+}
+
 std::string GenerateHTTPResponse::generateHttpResponseHeader(
     const std::string& httpResponseBody) {
-  std::string httpResponseHeader = "Server: webserv\n";
-  httpResponseHeader += "Content-Type: text/html\n";
+  std::string httpResponseHeader = "Server: webserv\r\n";
+
+  // ファイルパスを取得してMIMEタイプを設定
+  std::string filePath;
+  if (_httpRequest.getMethod() != "DELETE") {
+    filePath = getSuccessPathForHttpResponseBody();
+  }
+  std::string mimeType = getMimeType(filePath);
+
+  httpResponseHeader += "Content-Type: " + mimeType + "\r\n";
   httpResponseHeader +=
-      "Content-Length: " + int2str(httpResponseBody.size()) + "\n";
-  httpResponseHeader += "Connection: close\n";
+      "Content-Length: " + int2str(httpResponseBody.size()) + "\r\n";
+  httpResponseHeader += "Connection: close\r\n";
   return httpResponseHeader;
 }
 
@@ -52,6 +120,12 @@ bool isDirectory(const std::string& filePath) {
     return false;
   }
   return S_ISDIR(st.st_mode);
+}
+
+// ファイルが存在するかチェックする関数
+bool GenerateHTTPResponse::fileExists(const std::string& filePath) {
+  std::ifstream file(filePath.c_str());
+  return file.good();
 }
 
 // エラーステータスコード（2xxまたは301）の場合のファイルパスを取得する
@@ -73,11 +147,14 @@ std::string GenerateHTTPResponse::getErrorPathForHttpResponseBody(
     rootValue = hostDirective->getValue("root");
   }
 
-  // カスタムエラーページが設定されており、かつ空でなければそのパスを返す
-  if (!errorPageValue.empty() &&
-      !readFile(rootValue + errorPageValue).empty()) {
-    return rootValue + errorPageValue;
+  // カスタムエラーページが設定されており、かつファイルが存在すればそのパスを返す
+  if (!errorPageValue.empty() && !rootValue.empty()) {
+    std::string fullPath = rootValue + errorPageValue;
+    if (fileExists(fullPath)) {
+      return fullPath;
+    }
   }
+
   // 設定がなければデフォルトのエラーページを返す
   return DEFAULT_ERROR_PAGE;
 }
@@ -107,7 +184,8 @@ std::string GenerateHTTPResponse::getSuccessPathForHttpResponseBody() {
     }
     // インデックスディレクティブがなければデフォルトのindex.htmlを使用
     std::string defaultIndexFileName =
-        requestedURL.end()[-1] == '/' ? "index.html" : "/index.html";
+        requestedURL[requestedURL.length() - 1] == '/' ? "index.html"
+                                                       : "/index.html";
     return rootValue + requestedURL + defaultIndexFileName;
   }
 
@@ -122,7 +200,11 @@ static bool endsWith(const std::string& str, const std::string& suffix) {
 }
 
 std::string GenerateHTTPResponse::getDirectiveValue(std::string directiveKey) {
-  return getDirectiveValues(directiveKey)[0];
+  std::vector<std::string> values = getDirectiveValues(directiveKey);
+  if (values.empty() || (values.size() == 1 && values[0].empty())) {
+    return "";
+  }
+  return values[0];
 }
 
 std::vector<std::string> GenerateHTTPResponse::getDirectiveValues(
@@ -139,27 +221,27 @@ std::vector<std::string> GenerateHTTPResponse::getDirectiveValues(
 
   // 指定のホスト内の指定のロケーション内で指定ディレクティブdirectiveKeyの値があれば取得する
   std::string requestedURL = _httpRequest.getURL();
-  if (isDirectory(rootValue + requestedURL)) {
+  if (!rootValue.empty() && isDirectory(rootValue + requestedURL)) {
     const Directive* locationDirective = _rootDirective.findDirective(
         _httpRequest.getServerName(), "location", requestedURL);
     if (locationDirective != NULL) {
       directiveValues = locationDirective->getValues(directiveKey);
-      if (!directiveValues.empty()) return directiveValues;
+      if (!directiveValues.empty() && !directiveValues[0].empty()) {
+        return directiveValues;
+      }
     }
   }
 
   // 「指定のホスト内直下にある」かどうかを調べる．
   if (hostDirective != NULL) {
     directiveValues = hostDirective->getValues(directiveKey, false);
-    if (!directiveValues.empty()) {
+    if (!directiveValues.empty() && !directiveValues[0].empty()) {
       return directiveValues;
     }
   }
 
-  // 何もないものを返す
-  std::vector<std::string> emptyVector;
-  emptyVector.push_back("");  // 空文字列を追加
-  return emptyVector;
+  // 空のベクターを返す
+  return std::vector<std::string>();
 }
 
 std::string GenerateHTTPResponse::generateHttpResponseBody(
